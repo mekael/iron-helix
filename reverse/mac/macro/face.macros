@@ -1,0 +1,338 @@
+-- Face
+--
+-------------------------------------------------------------------------------------------------------------------
+Macro FunctionButtons 
+global FnctBtnSprite, FunctBtnCast, InstalledInterface, ArmActivated, ScanActivated, ProbeDead
+  
+     set CapturedV = the mouseV
+    set WhichHilite = FunctBtnCast
+      if (CapturedV < 39) and (CapturedV > 21) and not ProbeDead then
+                    if ScanActivated then 
+                            set WhatFunction = "DeInstallScan"
+                    else
+                            set WhichHilite = FunctBtnCast + 2
+                            set WhatFunction = "InstallScan"
+                end if
+       else if (CapturedV < 63) and (CapturedV > 46) and not ProbeDead then
+                      set PrevHilite = the castnum of sprite FnctBtnSprite
+                      set the castnum of sprite FnctBtnSprite = FunctBtnCast + 3
+                      updatestage
+                      JamDefender
+                set WhichHilite = PrevHilite
+                set WhatFunction = "Nothing"
+       else if (CapturedV < 89) and (CapturedV > 72) and not ProbeDead then 
+                     if ArmActivated  then
+                             set WhatFunction = "DeInstallArm"
+                     else
+                             set WhichHilite = FunctBtnCast + 4
+                             set WhatFunction = "InstallArm"
+               end if
+        else if (CapturedV < 138) and (CapturedV > 123)  then 
+                   if (InstalledInterface = "Controls")  then 
+                            set WhatFunction = "DeInstallControls"
+                   else
+                            set WhichHilite = FunctBtnCast + 5
+                            set WhatFunction = "InstallControls"
+              end if
+         else if ProbeDead then
+                --RunPaco( "Probe not responding" )
+                -- puppetsound "SysBeeb"
+                exit
+         else exit
+
+        set the castnum of sprite FnctBtnSprite = WhichHilite
+        updatestage
+
+        do ( WhatFunction )
+        
+-------------------------------------------------------------------------------------------------------------------
+Macro ModeButtonAction
+
+---|  Constants  Start  |---
+global ModeBtnSprite, ModeBtnCast
+---|  Constants  End     |---
+
+global MapMode, ChangedMode
+
+   set CapturedH = the mouseh 
+
+    if CapturedH < 394 then 
+        set the castnum of sprite ModeBtnSprite  = ModeBtnCast + 1
+        set MapMode = 1  
+    else if CapturedH < 435 then 
+        set the castnum of sprite ModeBtnSprite = ModeBtnCast + 2 
+        set MapMode = 2  
+    else 
+        set the castnum of sprite ModeBtnSprite  = ModeBtnCast + 3
+        set MapMode = 3
+    end if
+    updatestage
+    set ChangedMode = True
+   InstallMap ( 2, 2 )
+-------------------------------------------------------------------------------------------------------------------
+Macro GameControls
+
+---|  Constants  Start  |---
+global GameCntrlCast, PanelSprite
+---|  Constants  End     |---
+
+global VolumeLocH
+
+    set CapturedH = the mouseh
+    set CapturedV = the mousev
+
+    if (CapturedH  < 74) then PanelHilite( GameCntrlCast + 1, PanelSprite, "QuitGame")
+    else if (CapturedH > 79) and (CapturedH < 125) then PanelHilite( GameCntrlCast + 3, PanelSprite, "SaveGame") 
+    else if (CapturedH > 132) and (CapturedH < 185) then PanelHilite( GameCntrlCast + 5, PanelSprite, "PauseGame") 
+    else if (CapturedH > 225) and (CapturedH < 271) then PanelHilite( GameCntrlCast + 7, PanelSprite, "DisplayNotes") 
+
+-------------------------------------------------------------------------------------------------------------------
+Macro QuitGame
+
+---|  Constants  Start  |---
+global GameCntrlCast, PanelSprite, FnctBtnSprite, FunctBtnCast, CntScreenH, CntScreenV, Pacosprite, NavCast
+---|  Constants  End     |---
+
+global ArmActivated, ScanActivated, InstalledInterface, GamePaused, NotesUp
+
+
+    if NotesUp then PutAwayNotes
+   set PauseStartTime = ConvertedTime()
+   set GamePaused = true
+    ScreenToCast (Pacosprite, NavCast)
+
+
+    set QuitCastnum =  the number of cast "Quit Dialog"
+    set the ink of sprite (PanelSprite - 1) = 0
+    set the ink of sprite PanelSprite = 8
+    ResetCast(PanelSprite - 1, QuitCastnum, CntScreenH, CntScreenV )
+    ResetCast(PanelSprite, QuitCastnum + 1, CntScreenH, CntScreenV )
+    updatestage
+
+    sound stop 1
+
+    when timeout then
+    when mousedown then QuitHilites
+
+-------------------------------------------------------------------------------------------------------------------
+
+Macro QuitHilites
+
+---|  Constants  Start  |---
+global GameCntrlCast, PanelSprite
+---|  Constants  End     |---
+
+global ArmActivated, ScanActivated, InstalledInterface, GamePaused, NotesUp, SaveCanceled
+
+-- check for enter and return
+
+    dontpassevent
+    set QuitCastnum =  the number of cast "Quit Dialog"
+
+    if rollover( PanelSprite ) then
+            if (the mouseH < 237) then set the castnum of sprite PanelSprite = (QuitCastnum + 3)
+            else if (the mouseH < 312) and (the mouseH > 246) then set the castnum of sprite PanelSprite = (QuitCastnum + 5)
+            else if (the mouseH > 326) then set the castnum of sprite PanelSprite = (QuitCastnum + 7)
+            else
+                    beep ( 1 )
+                    exit
+             end if
+    else
+
+             beep ( 1 )
+             exit
+   end if
+
+    updatestage
+    set WhichHilite = the castnum of sprite PanelSprite
+
+    repeat while the mousedown
+      if rollover( PanelSprite ) then set the castnum of sprite PanelSprite = WhichHilite
+      else set the castnum of sprite PanelSprite = (WhichHilite - 1)
+      updatestage
+    end repeat
+    if the castnum of sprite PanelSprite = (WhichHilite - 1) then
+         set the castnum of sprite PanelSprite = (QuitCastnum + 1)
+         updatestage
+         exit
+     end if  
+
+    when mousedown then
+    set the castnum of sprite PanelSprite = (QuitCastnum + 1)
+    updatestage
+    DelayOf(15)
+    set the castnum of sprite PanelSprite = 0
+    set the ink of sprite (PanelSprite - 1) = 36
+    set the ink of sprite PanelSprite = 36
+    ResetCast((PanelSprite - 1),the number of cast "Game Controls",415,80)
+    updatestage
+
+    if WhichHilite = (QuitCastnum + 3) then CleanUpAndQuit
+    else if WhichHilite = (QuitCastnum + 5) then ContPause
+    else if WhichHilite = (QuitCastnum + 7) then 
+          SaveGame
+        if SaveCanceled then ContPause
+        else CleanUpAndQuit
+   end if
+
+-------------------------------------------------------------------------------------------------------------------
+Macro ConvertedTime
+
+   set Time = word 1 of the time
+    set LengthStartTime = length(Time)
+    set Mins = value(chars(Time, LengthStartTime - 1, LengthStartTime))
+    set Hours =  value(chars(Time, 1, LengthStartTime - 3))
+    set Time = Mins + Hours * 60
+    return( Time )
+-------------------------------------------------------------------------------------------------------------------
+Macro PauseGame
+
+---|  Constants  Start  |---
+global  CDpath, Panelsprite,CntScreenH,CntScreenV, ScreenCntrlSprite, Pacosprite, NavCast, ScreenCast, FnctBtnSprite
+global  FunctBtnCast
+---|  Constants  End     |--
+
+global GamePaused, GameEndMins, ResetFromSegue, PreAuthScreen, DefEject, NotesUp, PauseStartTime
+global ArmActivated, ScanActivated, InstalledInterface
+
+    if ArmActivated then DeInstallArm
+   else if ScanActivated then DeInstallScan
+  else if InstalledInterface = "Controls" then DeInstallControls
+   set the castnum of sprite FnctBtnSprite = FunctBtnCast
+ 
+    set PauseStartTime = ConvertedTime()
+    set GamePaused = true
+    if NotesUp then PutAwayNotes
+   
+    ScreenToCast (Pacosprite, NavCast)
+    ScreenToCast ( ScreenCntrlSprite, ScreenCast )
+    ResetCast((PanelSprite - 1),the number of cast "Segue",CntScreenH,CntScreenV)
+    ResetCast(PanelSprite,the number of cast "Game Paused",CntScreenH,CntScreenV)
+    updatestage
+    sound stop 1
+
+    when keydown then ContPause
+    when mousedown then ContPause
+    when timeout then
+-------------------------------------------------------------------------------------------------------------------
+
+Macro ContPause
+
+---|  Constants  Start  |---
+global  Panelsprite, FlushAll
+---|  Constants  End     |--
+
+global GamePaused, TimeElasped, PercInMiss, PauseStartTime, GameEndMins, GameStartMins, DefenderOff
+    
+    flushall ( mflush )
+    dontpassevent
+    ResetCast((PanelSprite - 1),the number of cast "Game Controls",415,80)
+    set the castnum of sprite PanelSprite = 0
+    updatestage
+
+    set GamePaused = false
+    if not DefenderOff then when timeout then AdvDefender
+    when mousedown then
+    when keydown then keycheck
+    set TimeElasped = ConvertedTime() - PauseStartTime
+    set PercInMiss = PercInMiss + TimeElasped
+    set GameEndMins =  GameEndMins + TimeElasped
+    set GameStartMins = GameStartMins + TimeElasped
+    unloadcast D54
+
+    InstallNodeScreen
+    updatestage
+
+-------------------------------------------------------------------------------------------------------------------
+Macro DisplayNotes
+
+---|  Constants  Start  |---
+global ScreenCntrlSprite, PanelSprite, PacoSprite, NavCast
+---|  Constants  End     |---
+
+global NotesUp, NotesCast, EnergyLevel, IndicatorsInstalled, PrevCast, InstalledInterface
+    
+    if InstalledInterface = "scan" then
+       beep(1)
+        exit
+    end if
+
+    if NotesUp then PutAwayNotes
+    else
+        set NotesUp = true
+        ScreentoCast ( PacoSprite, NavCast )
+        set prevcast = the castnum of sprite  (ScreenCntrlSprite + 1)
+        set Prevh = the loch of sprite (ScreenCntrlSprite + 1)
+        set Prevv = the locv of sprite (ScreenCntrlSprite + 1)
+        set the trails of sprite (ScreenCntrlSprite + 1) = true
+        set the castnum of sprite (ScreenCntrlSprite + 1) =  the castnum of sprite (ScreenCntrlSprite + 1) 
+        updatestage
+        ResetCast( (ScreenCntrlSprite + 1), the number of cast "NotesCast", 28, 21)
+        updatestage
+        if PrevCast <> 0 then ResetCast( (ScreenCntrlSprite + 1), prevcast, Prevh, Prevv)
+        else ResetCast( (ScreenCntrlSprite + 1), A43, -10, -10)                                      --- cast A43 is a black dot
+       set the trails of sprite (ScreenCntrlSprite + 1) = false
+        updatestage
+    end if
+-------------------------------------------------------------------------------------------------------------------
+Macro PutAwayNotes
+
+global NotesUp, ScreenCntrlSprite, PrevCast, NotesCast
+
+    set NotesUp = false
+    set prevcast = the castnum of sprite  (ScreenCntrlSprite + 1)
+    set Prevh = the loch of sprite (ScreenCntrlSprite + 1)
+    set Prevv = the locv of sprite (ScreenCntrlSprite + 1)    
+    set the trails of sprite (ScreenCntrlSprite + 1) = true
+    set the castnum of sprite (ScreenCntrlSprite + 1) =  the castnum of sprite (ScreenCntrlSprite + 1) 
+    updatestage
+    set the trails of sprite (ScreenCntrlSprite + 1) = false
+    ResetCast( (ScreenCntrlSprite + 1), (the number of cast "NotesCast") + 1, 28, 21)
+    updatestage
+    ResetCast( (ScreenCntrlSprite + 1), prevcast, Prevh, Prevv)
+    updatestage
+
+
+-------------------------------------------------------------------------------------------------------------------
+Macro VolumeSet
+
+---|  Constants  Start  |---
+global PanelSprite, CntScreenV, GameCntrlCast
+---|  Constants  End     |---
+
+global TheVolume, CurVolume,  NewAIFFVol, NewVol, volumeObj, VolumeLocH, VolumeSprite
+  
+
+
+
+   set MinSliderH = 347
+   set MaxSliderH = 439
+   set CapturedH = the mouseh
+
+   set MouseOffsetH = (CapturedH - the loch of sprite VolumeSprite)
+    repeat while the mousedown 
+          set CapturedH = the mouseh
+          if CapturedH - MouseOffsetH < MinSliderH then set NewSliderH = MinSliderH
+            else if CapturedH - MouseOffsetH > MaxSliderH then set NewSliderH = MaxSliderH
+               else set NewSliderH = CapturedH - MouseOffsetH
+           set the loch of sprite VolumeSprite = NewSliderH
+           updatestage
+    end repeat
+
+   set NewVol =  integer(7/94.0 * ((the loch of sprite VolumeSprite - MinSliderH ) + 0.0/(MaxSliderH - MinSliderH)))
+
+    PlaySound ( "SoundCheck" )
+   if objectP( volumeObj ) then volumeObj( mDispose )
+   set volumeObj = SpeakerVol( mNew )
+   volumeObj( mSetSpeakerVol, NewVol )
+
+    if NewVol = 0 then
+        set the soundenabled = false
+        set the soundLevel = 0
+    else 
+        set the soundenabled = true
+        set the soundLevel = 7
+        --PlaySound ( "SoundCheck" )
+    end if
+    set VolumeLocH = the loch of sprite VolumeSprite
+-------------------------------------------------------------------------------------------------------------------

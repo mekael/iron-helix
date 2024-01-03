@@ -1,0 +1,165 @@
+-- Gen
+--
+------------------------------------------------------------------------------------------------------------------
+Macro IdleMacro
+
+---|  Constants  Start  |---
+global  ProbeMapSprite, DefMapSprite, ProbeCastNum, TaskReSetTime
+---|  Constants  End     |---
+
+global CBLightStartPos, CBLightSprite, InstalledInterface, IndicatorsInstalled, WarningLevel, CBLightCast, CBLightPos
+global DefJammed, DefenderOff, DefenderTasks, DefenderReSetTime, AutoScanInstalled, MapMode, DefLevel, Level
+global ProbeDead, GamePaused
+
+     if GamePaused then exit
+
+     if DefJammed and not(( MapMode = 1 ) and ( DefLevel <> Level )) then
+           if the castnum of sprite DefMapSprite =  (ProbeCastNum + 4) then
+               set the castnum of sprite DefMapSprite = 0
+            else set the castnum of sprite DefMapSprite =  (ProbeCastNum + 4) 
+            updatestage
+       else if (WarningLevel = 2) and (the timer > 40) then SignalWarnings ("Warning Two")
+       else if (WarningLevel = 1) and (the timer > 20) then SignalWarnings ("Warning One")
+       else if (the timer > 90) then
+           if the castnum of sprite CBLightSprite <> CBLightCast then set the castnum  of sprite CBLightSprite = CBLightCast
+           set the loch of sprite CBLightSprite = CBLightStartPos + (random (10)  - 1) * 18
+           updatestage
+           starttimer
+       end if
+
+   set CurrTime = the time
+
+   if (DefenderReSetTime <> "Null") then
+        if ( CurrTime > DefenderReSetTime) then 
+            DefenderBack
+        end if
+    else if (not DefenderOff) and (DefenderTasks <> "none") and (CurrTime >= TaskReSetTime) then DefenderAtWork
+
+    if IndicatorsInstalled then AnimateScanBars
+    if AutoScanInstalled then CycleAutoScan
+
+   UpDateGameTime
+-------------------------------------------------------------------------------------------------------------------
+Macro DefenderBack
+
+global DefFilePos, DefMapPos, PrevDefLevel, DefLevel, DefenderReSetTime, DefenderOff, WarningLevel, ChangedMode
+global ModeBtnSprite, ModeBtnCast, MapMode
+
+    if DefenderOff then 
+        set DefFilePos = 5
+        set DefMapPos = DefFilePos
+        TraverseDefTree (0)
+        set PrevDefLevel = DefLevel
+        set DefenderOff = false
+    end if
+
+    set DefenderOff = false
+    SetDefenderRun
+    set the castnum of sprite ModeBtnSprite = ModeBtnCast + 2 
+    set MapMode = 2
+    set ChangedMode = true
+   InstallMap ( 2, 2 )
+    updatestage
+    SetWarningLevel        
+    if (WarningLevel = 0)  then KillUser
+   else
+        DefenderAtWork
+        when timeout then AdvDefender
+        set DefenderReSetTime = "Null" 
+    end if
+-------------------------------------------------------------------------------------------------------------------
+Macro DefenderAtWork
+
+---|  Constants  Start  |---
+global  CmpPacoPath
+---|  Constants  End     |---
+
+global TaskReSetTime, DefenderTasks, InstalledInterface, CDPath, DoorSensors, ProbeDead
+
+   when timeout then AdvDefender
+    if DefenderTasks = "none" then exit
+    repeat with Counter = 1 to (the number of words in DefenderTasks)
+        set WhatAction = word Counter of DefenderTasks
+        if not ProbeDead then 
+            if InstalledInterface = "Computer"then DoCmpAction(WhatAction & "BOL.Cmp", "None")
+            else RunPacoNodeText(CDPath & "Messages:" & WhatAction & "BOL.Mssg")
+        end if 
+        if WhatAction = "DoorSensors" then set DoorSensors = "Done"
+    end repeat
+
+    set DefenderTasks = "none"
+    if InstalledInterface = "Computer" then PacoErase
+-------------------------------------------------------------------------------------------------------------------
+Macro SignalWarnings Warning
+
+---|  Constants  Start  |---
+global  DefMapSprite, ProbeCastNum, CBLightSprite, CBLightStartPos, CBLightCast
+---|  Constants  End     |---
+
+global WarningLevel
+
+    set the loch of sprite CBLightSprite = CBLightStartPos
+
+    if the castnum of sprite CBLightSprite = 0 then
+            puppetsound Warning
+            if Warning = "Warning One" then set the castnum of sprite CBLightSprite =  CBLightCast + 1
+            else set the castnum of sprite CBLightSprite =  CBLightCast + 2
+    else set the castnum of sprite CBLightSprite = 0
+
+    updatestage
+    starttimer
+-------------------------------------------------------------------------------------------------------------------
+Macro AnimateScanBars
+
+---|  Constants  Start  |---
+global ScreenCntrlSprite
+---|  Constants  End     |---
+
+global ScanPntsString, NodeScreenCast, InstalledInterface
+
+    repeat with counter = 0 to 3
+
+       set WhichSprite = (ScreenCntrlSprite + 2 + counter)
+       if the castnum of sprite WhichSprite <> 0 then
+            set NewCast = the castnum of sprite WhichSprite + random(3) - 2
+            if (NewCast < NodeScreenCast + 2) then set NewCast = (NodeScreenCast + 2)
+              else if (NewCast > NodeScreenCast + 6) then set NewCast = (NodeScreenCast + 6)
+            set the castnum of sprite WhichSprite = NewCast
+        end if
+
+    end repeat
+   updatestage
+
+-------------------------------------------------------------------------------------------------------------------
+Macro DelayOf HowLong
+    starttimer
+    repeat while the timer < HowLong
+    end repeat
+-------------------------------------------------------------------------------------------------------------------
+Macro ScreenToCast WhichSprite, WhichCast
+global copyObj, AlreadyClipped
+
+    if AlreadyClipped then exit
+    else set AlreadyClipped = true
+
+    set rT = the top of sprite WhichSprite
+    set  rL =  the left of sprite WhichSprite
+    set rB =  the bottom of sprite WhichSprite 
+    set rR =  the right of sprite WhichSprite
+    set copyObj = StageToCast( mNew, rT, rL, rB, rR )
+    set the picture of cast WhichCast = copyObj( mGetHandle )
+    copyObj( mdispose )
+-------------------------------------------------------------------------------------------------------------------
+Macro ImmediateOn Start, End
+    repeat while Start <= End
+        immediatesprite Start, True
+        set Start = Start + 1
+    end repeat
+-------------------------------------------------------------------------------------------------------------------
+Macro DirectionString
+global Direction
+    if Direction = 0 then return("N")
+        else if Direction = 1 then return("E")
+            else if Direction = 2 then return("S")
+                else return("W" )
+-------------------------------------------------------------------------------------------------------------------

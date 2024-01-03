@@ -1,0 +1,80 @@
+-- Node
+--
+-------------------------------------------------------------------------------------------------------------------
+Macro ResetButton Statis, BtnToBeReset
+global StartCastBtn, NavStartSprite, DoubleArrow
+    set CastLocation = StartCastBtn + ( BtnToBeReset * 3 )
+    if Statis = 0 then set the castnum of sprite (NavStartSprite + BtnToBeReset) = 0
+        else set the castnum of sprite (NavStartSprite + BtnToBeReset) = (CastLocation + DoubleArrow)
+-------------------------------------------------------------------------------------------------------------------
+Macro ParseNodeString
+
+global NodeString, DownString, FwdItemLoc, FwdTraverse, FwdMoveSound, BckTraverse, BckMoveSound, Direction
+global DoorString, DoorBehind, UpString
+
+    set UpString = item 6 of NodeString
+    set DownString = item 7 of NodeString
+    set FwdItemLoc = integer( Direction + 2 )
+    set FwdTraverse = item (FwdItemLoc) of NodeString
+
+    if FwdTraverse contains "." then                                                                                          -- ParseOut Sound to Play
+         set PeriodOffset = offset(".", FwdTraverse)
+         set FwdMoveSound = chars(FwdTraverse, PeriodOffset + 1, PeriodOffset + 1)
+         set FwdTraverse = chars(FwdTraverse,1, PeriodOffset - 1)
+    else set FwdMoveSound = "1"
+
+     if FwdItemLoc > 3 then set BckItemLoc = ( FwdItemLoc + 2 ) mod 4                                       -- Bck Button
+            else set BckItemLoc = ( FwdItemLoc + 2 )
+
+    set BckTraverse = item ( BckItemLoc ) of NodeString
+    if BckTraverse contains "." then                                                                                         -- ParseOut Sound to Play
+        set PeriodOffset = offset(".", BckTraverse)
+        set BckMoveSound = chars(BckTraverse, PeriodOffset + 1, PeriodOffset + 1)
+        set BckTraverse = chars(BckTraverse,1, PeriodOffset - 1)
+    else set BckMoveSound = "1"
+
+    set DoorString = item( Direction + 8) of Nodestring
+    set DoorBehind = item( 8 + (Direction + 2) mod 4 ) of Nodestring
+
+-------------------------------------------------------------------------------------------------------------------
+Macro InitNode
+
+---|  Constants  Start  |---
+global  ProbeModeTxt, EnergyLevelOut
+---|  Constants  End     |---
+
+global Nodestring, UpString, Direction, DownString, DoorString, DoorOpen, FwdTraverse, BckTraverse, Inladder, DoorBehind
+global ProbeFailures, Node, ProbeDead, EnergyLevel
+    
+    if ( UpString <> "0") and (integer(chars(UpString, 1, 1)) = Direction) then ResetButton( 1, 0)
+        else ResetButton( 0, 0 )
+
+    if (DownString <> "0")  and (integer(chars(DownString, 1, 1)) = Direction) then  ResetButton( 1, 1 )
+        else ResetButton( 0, 1 )
+
+    if ( DoorString <> "#") and (not DoorOpen) then  ResetButton( 0, 2 )
+        else ResetButton( FwdTraverse, 2 )
+
+    if (DoorBehind <> "#" ) then ResetButton( 0, 3 )
+        else ResetButton( BckTraverse, 3 )
+
+    if Inladder then
+            ResetButton( 0, 4 )
+            ResetButton( 0, 5 )
+    else
+            ResetButton( 1, 4 )
+            ResetButton( 1, 5 )
+    end if
+
+    GetScanPts
+    InstallNodeScreen
+   
+    if (not ProbeDead) or ( EnergyLevel < EnergyLevelOut + 5 ) then
+
+        if (ProbeFailures contains (Node & "." & Direction)) and ((random(50) = 1) or ( EnergyLevel < EnergyLevelOut + 5 )) then
+            
+            ProbeFails( EnergyLevel < EnergyLevelOut + 5 )
+            exit
+        end if
+
+    else set ProbeDead = False

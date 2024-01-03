@@ -1,0 +1,64 @@
+-- Paco
+--
+-------------------------------------------------------------------------------------------------------------------
+Macro InitialNavPaco
+
+global Vert, Horz, Node, Pacosprite, NavCast
+
+    set Vert = the Top of sprite Pacosprite
+    set Horz = the Left of sprite Pacosprite
+-------------------------------------------------------------------------------------------------------------------
+Macro RunNavPaco WhichPaco, WhichSprite, NavSound
+
+---|  Constants  Start  |---
+global DefMapSprite, ProbeCastNum, CDPath, FnctBtnSprite, FunctBtnCast
+---|  Constants  End     |---
+
+global Path, Node,DefJammed, DefLevel, Level, MapMode, InstalledInterface, ArmActivated, ScanActivated
+global AlreadyClipped, NotesUp
+
+    set AlreadyClipped = false
+    if notesup then set notesup = false
+
+   if DefJammed and (Level = DefLevel ) then 
+        set the castnum of sprite DefMapSprite = ProbeCastNum + 4
+        updatestage
+    end if
+
+  set the castnum of sprite FnctBtnSprite = FunctBtnCast
+  if ArmActivated then DeInstallArm
+   else if ScanActivated then DeInstallScan
+  else if InstalledInterface = "Controls" then DeInstallControls
+
+   if DefJammed and not ((DefLevel <> Level) and (MapMode = 1))  then
+            set the castnum of sprite DefMapSprite = (ProbeCastNum + 4) 
+            updatestage
+    end if
+
+
+    if NavSound <> "None" then PlaySound (NavSound )
+    set Vert = the stageTop + the Top of sprite WhichSprite
+    set Horz = the stageLeft + the Left of sprite WhichSprite
+    XPlayAnim WhichPaco, Horz,Vert
+
+-------------------------------------------------------------------------------------------------------------------
+Macro RunPaco WhichPaco, WhichSprite
+
+global AlreadyClipped, NotesUp, DefJammed, Level, DefLevel, DefMapSprite, ProbeCastNum, GamePlayFrame
+
+   if DefJammed and (Level = DefLevel ) and (the frame = GamePlayFrame) then 
+        set the castnum of sprite DefMapSprite = ProbeCastNum + 4
+        updatestage
+    end if
+
+   set Vert = the stageTop + the Top of sprite WhichSprite
+   set Horz = the stageLeft + the Left of sprite WhichSprite
+   XPlayAnim WhichPaco, Horz,Vert
+-------------------------------------------------------------------------------------------------------------------
+
+Macro RunPacoNodeText WhichPaco
+global ScreenCntrlSprite
+   set Vert = the stageTop + 19
+   set Horz = the stageLeft + 342
+   XPlayAnim WhichPaco, Horz,Vert
+----------------------------------------------------------------------------------------------------

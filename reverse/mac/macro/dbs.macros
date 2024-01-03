@@ -1,0 +1,124 @@
+-- DBs
+--
+Macro TraverseTree TraverseDirection
+
+---|  Constants  Start  |---
+global  MapDBVar, NodeDBVar
+---|  Constants  End     |---
+
+global NodeString, CurNavTreePos, Node, Level, ProbeMapCord, ProbeMapPos
+
+    set ProbeMapPos = TraverseDirection + ProbeMapPos                     -- Map Cordinates DB
+    set ProbeMapCord = line ProbeMapPos of MapDBVar
+
+    set CurNavTreePos = integer(TraverseDirection) + CurNavTreePos
+    set NodeString = line CurNavTreePos of NodeDBVar
+    set Node = item 1 of NodeString
+    set Level = integer(chars(Node,1,1))
+-------------------------------------------------------------------------------------------------------------------
+Macro GetLineSlopes DistH, DistV, MaxSpeed
+global StepH, StepV
+    if (DistH = 0 ) and (DistV = 0) then
+        set StepH = 0
+        set StepV = 0
+    else
+          set AbsDistH = abs(DistH)
+          set AbsDistV = abs(DistV)
+           if AbsDistH  > AbsDistV then
+               if DistV <> 0 then 
+                    set StepH = AbsDistH/AbsDistV 
+                    set factor =  StepH/MaxSpeed
+                    set StepV = DistV/AbsDistV * 1/factor
+                    set StepH = StepH/factor *  DistH/AbsDistH
+                 else
+                    set StepH = DistH/AbsDistH * MaxSpeed
+                    set StepV = 0
+                 end if
+            else
+                if DistH <> 0 then 
+                    set StepV = AbsDistV/AbsDistH
+                    set factor =  StepV/MaxSpeed
+                    set StepH = DistH/AbsDistH * 1/factor
+                    set StepV = StepV /factor * DistV/AbsDistV
+                 else
+                    set StepV = DistV/AbsDistV * MaxSpeed
+                    set StepH = 0
+                 end if
+            end if
+    end if
+-------------------------------------------------------------------------------------------------------------------
+macro QuickSearch QSTargetNode
+
+global  QSDefNodeString, QSDefNode, DefTreePath, WarningLOS, SearchPos, DefDBVar, DefNodePath
+
+    set Lchild = item 3 of QSDefNodeString
+    set LchildNode = value(QSDefNode) + value(Lchild)
+    set LchildMax = value( item 5 of QSDefNodeString )
+
+    if ( QSTargetNode <= LchildMax) and (QSTargetNode >= LchildNode) then set TreeJump = Lchild
+    else
+        set Rchild = item 4 of QSDefNodeString
+        set RchildNode = value(QSDefNode)  + value(Rchild)
+        set RchildMax = value(item 6 of QSDefNodeString)
+        if (QSTargetNode <= RchildMax) and (QSTargetNode >= RchildNode) and (Rchild <> 0) then set TreeJump = Rchild
+           else set TreeJump = item 2 of QSDefNodeString
+    end if
+
+    set TreeJump = integer(TreeJump)
+    set SearchPos = SearchPos + TreeJump 
+    set QSDefNodeString = line SearchPos of DefDBVar
+    set DefTreePath =  DefTreePath  & ","  & TreeJump
+    set WarningLOS = WarningLOS & "," & (item 7 of QSDefNodeString)
+
+    set QSDefNode =  value( chars(QSDefNodeString, 3 ,4) )
+
+    if (the number of items in DefTreePath > 40) then RandomNode
+    else if QSDefNode <> QSTargetNode then QuickSearch( QSTargetNode )
+
+-------------------------------------------------------------------------------------------------------------------
+Macro checkError
+global theProblem
+    if theProblem = -43 then exit 
+        else alert "Unable to accept name. Unlock your disk."
+-------------------------------------------------------------------------------------------------------------------
+Macro ReadTextFile Filename, WhichHandler
+    set globalString = "global " & WhichHandler
+    do globalString
+    set NewObject = "if objectp(" & WhichHandler & ") then " & WhichHandler  & "( mdispose )"
+    do NewObject
+    set NewObject = "set " & WhichHandler & " =  FileIO(mNew, " & Quote & "read" & Quote & ",  " & Quote & Filename  & Quote & ")"
+    do NewObject
+-------------------------------------------------------------------------------------------------------------------
+Macro WriteTextFile Filename, WhichHandler
+    set globalString = "global " & WhichHandler
+    do globalString
+    set NewObject = "if objectp(" & WhichHandler & ") then " & WhichHandler  & "( mdispose )"
+    do NewObject
+    set WriteCommand = "set " & WhichHandler & " =  FileIO(mNew, " & Quote & "write" & Quote & ",  " & Quote & Filename  & Quote & ")"
+    do WriteCommand
+-------------------------------------------------------------------------------------------------------------------
+macro SetFilePos WhichHandler, NewFilePos
+    set globalString = "global " & WhichHandler
+    do globalString
+    set SetPos =  WhichHandler & "(mSetPosition," &  NewFilePos & ")"
+    do SetPos
+-------------------------------------------------------------------------------------------------------------------
+macro GetFilePos WhichHandler
+    set globalString = "global " & WhichHandler
+    do globalString
+    set GetPos =  "return( " & WhichHandler & "(mGetPosition) )"
+    do GetPos
+    
+-------------------------------------------------------------------------------------------------------------------
+Macro Readln WhichHandler
+   set globalString = "global " & WhichHandler
+   do globalString
+    set ReadlnCommand =  "set textline = " & WhichHandler & "(mreadline)"
+    do ReadlnCommand
+    return( textline )
+-------------------------------------------------------------------------------------------------------------------
+Macro Writeln WhichHandler, TheString
+    set globalString = "global " & WhichHandler
+    do globalString
+    set WritelnCommand = WhichHandler & "(mWriteString, " & Quote & TheString & Quote & ")"
+    do WritelnCommand

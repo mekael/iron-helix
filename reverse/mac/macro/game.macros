@@ -1,0 +1,359 @@
+--Game
+--
+-----------------------------------------------------------------------------------------------------------------
+Macro GameIntro
+
+---|  Constants  Start  |---
+global HDpath, CDpath, VolumeSprite
+---|  Constants  End     |---
+
+global SkillLevel, VolumeLoch
+
+    set VolumeLocH = 394
+    set SkillLevel = 1
+    set VolumeSprite = 5
+
+   InitPathsToDBs
+    RunPaco (CDpath & "Opening:OpenCreditsAndTitle", 24)
+    go frame "BridgeBG"
+    RunPaco (CDpath & "Opening:OPENING", 24)q
+    go frame "BootUp"
+-----------------------------------------------------------------------------------------------------------------
+Macro InitBootScreen
+
+---|  Constants  Start  |---
+global Cdpath, VolumeSprite
+---|  Constants  End     |---
+
+global SkillLevel, IndicatorsInstalled
+
+    when timeout then
+
+    set IndicatorsInstalled = false
+    puppetsprite VolumeSprite, true
+    set the cursor of sprite 1 to 0
+   sound playfile 1, (CDpath & "Opening:Iron Helix� Tune")
+    repeat with counter = 0 to 5
+        puppetsprite ( counter + 10), true
+    end repeat
+    set the castnum of sprite (9 + SkillLevel) = the castnum of sprite (9 + SkillLevel) + 1
+    updatestage
+    ImmediateOn( 10, 19 )
+-----------------------------------------------------------------------------------------------------------------
+Macro SetSkillLevel
+
+global SkillLevel
+
+    set the castnum of sprite (the clickon) = the castnum of sprite( the clickon ) + 1
+    set the castnum of sprite (9 + SkillLevel) = the castnum of sprite  (9 + SkillLevel) - 1
+    set SkillLevel = the clickon - 9
+    updatestage
+
+-----------------------------------------------------------------------------------------------------------------
+Macro BeginTheGame
+
+---|  Constants  Start  |---
+global Cdpath, VolumeSprite
+---|  Constants  End     |---
+
+global GamePhase, VolumeLocH, DNAKitty, ProbeNum, SavedGameLoaded, GameName, VidCluesAvail, DefenderOff
+global DefenderTasks, DefenderReSetTime, TaskReSetTime, NewVol, GameStartMins, AutoScanState
+
+    set the castnum of sprite (the clickon) = the castnum of sprite( the clickon ) + 1
+    updatestage
+
+    set GameName = "Iron Helix� Saved Game"
+    set SavedGameLoaded = false
+    CreateCodes
+    set DNAKitty = empty
+    set AutoScanState = true
+    set GamePhase = 1
+    set VidCluesAvail = empty
+    set the text of cast "NotesCast" = the text of cast "NotesDefault"
+    set DefenderReSetTime = "Null"
+    set DefenderTasks = "none"
+    set TaskReSetTime = ConvertedTime()
+    set DefenderOff = false
+    set GameStartMins = ConvertedTime()
+
+    set the loch of sprite VolumeSprite  = VolumeLocH                      -- So as to get reset when game begins
+    SetGameEndTime
+
+   if NewVol <> 0 then sound fadeout 1, 20
+   repeat with counter = 0 to 5
+        puppetsprite ( counter + 10), false
+   end repeat
+   set ProbeNum = 1
+   go frame "Entering"
+   sound stop 1
+   RunPaco (CDpath & "Video:Intro", 9)
+   go frame "Segue"
+   PlaySound( "Entering" )
+   RunPaco (CDpath & "Opening:Entering Ship", 24)
+   go frame "Entering"
+   RunPaco (CDpath & "Opening:Entering Ship PPV", 1)
+     if NewVol <> 0 then sound fadeout 1, 40
+  go frame "Game"
+-----------------------------------------------------------------------------------------------------------------
+Macro LoadSavedGame
+
+---|  Constants  Start  |---
+global CodeCast, VolumeSprite, CDpath, HDpath
+---|  Constants  End     |---
+
+global ProbeNum, DefNode, Direction, DNAkitty, GamePhase, DoorSensors, VolumeLocH, VidCluesAvail, SavedGameLoaded
+global GameSaver, EnergyLevel, GameName, DefenderReSetTime, DefenderTasks, TaskReSetTime, DefenderOff
+global DefspeedAltered, ProbeDead, NewVol, AlreadyClipped, GameVidClues, Level, InstalledInterface, IndicatorsInstalled
+global GameStartMins, GameEndMins, GameLength, PercInMiss, OriginalDefPos, OriginalProbePos, DefTrapped, Skilllevel
+
+
+    set the castnum of sprite (the clickon) = the castnum of sprite( the clickon ) + 1
+    updatestage
+    if NewVol <> 0 then sound  fadeout 1, 40
+
+
+    if objectp(GameSaver) then GameSaver( mdispose )
+    set GameSaver = fileIO(mNew, "?read", "IRHXDrew")
+    if not objectp(GameSaver) then exit
+    set GameName = GameSaver( mFileName )
+    set SavedGameLoaded = True
+    Initvars
+
+    set GameVarsLine  = Readln ("GameSaver")
+    set ProbeNum = integer( item 1 of GameVarsLine )
+    set DefNode = item  2 of GameVarsLine
+    set Node =  item  3 of GameVarsLine
+    set Direction = integer( item  4 of GameVarsLine )
+    set GamePhase = integer( item  5 of GameVarsLine )
+    set DefTrapped = integer(  item 6 of GameVarsLine )
+
+    set GameVarsLine = Readln ("GameSaver")
+    set VolumeLocH = integer( item 1 of GameVarsLine )
+    set EnergyLevel = integer( item  2 of GameVarsLine )
+
+    set GameLength = 90
+    set LengthOfPlay = integer(item  3 of GameVarsLine)
+    set PercInMiss =  integer(item  4 of GameVarsLine)
+    set Skilllevel =  integer(item 5 of GameVarsLine)
+
+    set GameStartMins = ConvertedTime() - LengthOfPlay
+    set GameEndMins =  GameStartMins + GameLength
+
+    set GameVarsLine = Readln ("GameSaver")
+    set DefenderReSetTime = item 1 of GameVarsLine
+
+    if DefenderReSetTime <> "null" then set DefenderReSetTime = CreateResetTime (4)
+    set DefenderTasks = item 2 of GameVarsLine
+    set TaskReSetTime = CreateResetTime (1)
+    set DefenderOff =  integer( item 4 of GameVarsLine )
+
+    set DNATemp = Readln ("GameSaver")
+    set DNAkitty = chars( DNATemp, 1, length(DNATemp) - 1 )
+
+    set GameVarsLine = Readln ("GameSaver")
+    set OriginalProbePos =  integer( item 1 of GameVarsLine  )
+    set OriginalDefPos =  integer( item 2 of GameVarsLine )
+    InitDBs
+
+    set GVCTemp = Readln ("GameSaver")
+    set GameVidClues = chars( GVCTemp, 1, length(GVCTemp) - 1 )
+    set VidCluesAvailTemp = Readln ("GameSaver")
+    set VidCluesAvail = chars( VidCluesAvailTemp, 1, length(VidCluesAvailTemp) - 1 )
+
+    set GameVarsLine = Readln ("GameSaver")
+    set DoorSensors = item  1 of GameVarsLine
+    set the text of cast D41 = item  2 of GameVarsLine
+    set the text of cast D42 = item 3 of GameVarsLine
+
+    set GameVarsLine =  GameSaver( mReadFile )
+    set the text of cast "NotesCast" = GameVarsLine
+
+    GameSaver( mdispose )
+    
+    InitSprites
+   InitCastMembers
+
+    set VolumeSprite = 5
+    PuppetSprite VolumeSprite, true
+    set the loch of sprite VolumeSprite  = VolumeLocH                      -- So as to get reset when game begins
+
+   repeat with counter = 0 to 5
+        puppetsprite ( counter + 10), false
+   end repeat
+
+    go frame "Game"
+    go the frame + 1
+    InitConstants
+
+    set Direction = (Direction + 7 ) mod 4
+    set TheRotation = "R" & DirectionString()
+
+    if Node contains "E" then set  NodeTemp = "0"
+    else set NodeTemp = Node
+
+    set WhichPaco = CDpath & "Navigation:L" & Chars(NodeTemp,1,1) & ":" & NodeTemp & "." & TheRotation
+    set Vert = the stageTop + the Top of sprite 1
+    set Horz = the stageLeft + the Left of sprite 1
+    XPlayAnim WhichPaco, Horz,Vert
+   set Direction = (Direction + 1 ) mod 4
+    set AlreadyClipped = false
+   ScreenToCast (1, A57)
+
+    InitialNavPaco
+    ParseNodeString
+
+   if DefTrapped then set the timeoutlength = 3600 * 3
+    else if not DefenderOff then
+        SetDefenderRun
+       AdvDefender
+      when timeout then AdvDefender
+    end if
+
+    when keydown then KeyCheck
+   InstallMap ( 2, 2 )
+    set InstalledInterface = "Loading"
+    set IndicatorsInstalled = false
+    InitNode
+    sound stop 1
+    updatestage
+--
+  set SavedGameLoaded = false
+
+------------------------------------------------------------------------------------------------------------------
+Macro SaveGame
+
+---|  Constants  Start  |---
+global  HDPath, CodeCast
+---|  Constants  End     |---
+
+global GameSaver, ProbeNum, DefNode, Node, Direction, DNAkitty, GamePhase, EnergyLevel, DoorSensors, GameStartMins
+global VidCluesAvail, VolumeLocH, GameName, DefenderReSetTime, DefenderTasks, TaskReSetTime, DefenderOff, PercInMiss
+global DefspeedAltered, ProbeDead, GameVidClues, CurNavTreePos, DefFilePos, AlreadyClipped, Pacosprite, NavCast
+global ScreenCntrlSprite, ScreenCast, NotesUp, DefTrapped, Skilllevel, PanelSprite, SaveCanceled
+
+    if NotesUp then PutAwayNotes
+    ScreenToCast (Pacosprite, NavCast)
+    set AlreadyClipped = false
+    ScreenToCast ( ScreenCntrlSprite, ScreenCast )
+    set SaveCanceled = false
+    if objectp(GameSaver) then GameSaver( mdispose )
+    set GameSaver = fileIO(mNew, "?write", "Iron Helix� Saved Game")
+    if not objectp(GameSaver) then
+         set the castnum of sprite PanelSprite = 0
+      updatestage
+        set SaveCanceled = true
+        exit
+    end if
+    set TimeElasped = ConvertedTime() - GameStartMins
+    
+    set GameVarsLine = ProbeNum & "," & DefNode & "," & Node & "," & Direction  & "," & GamePhase & "," & DefTrapped
+    Writeln ("GameSaver", GameVarsLine & Return)
+    set GameVarsLine = VolumeLocH & "," & EnergyLevel  & "," & TimeElasped  & "," &  PercInMiss & "," & Skilllevel
+    Writeln ("GameSaver", GameVarsLine & Return)
+    set GameVarsLine = DefenderReSetTime & "," & DefenderTasks & "," & TaskReSetTime & "," &  DefenderOff
+    Writeln ("GameSaver", GameVarsLine & Return)
+    Writeln ("GameSaver", DNAkitty & Return)
+
+    set GameVarsLine =  CurNavTreePos & "," & DefFilePos & ","
+    Writeln ("GameSaver", GameVarsLine & Return)
+
+    Writeln ("GameSaver", GameVidClues & Return)
+    Writeln ("GameSaver", VidCluesAvail & Return)
+
+    set GameVarsLine = DoorSensors & "," & the text of cast CodeCast  & "," & the text of cast (CodeCast + 1)
+    if not( GameVarsLine contains Return ) then set GameVarsLine = GameVarsLine & return
+    Writeln ("GameSaver", GameVarsLine )
+
+    Writeln ("GameSaver", the text of cast "NotesCast")
+    GameSaver( mSetFinderInfo, "IRHX", "Drew Pictures" )
+    GameSaver( mdispose )
+    cursor 0
+
+-----------------------------------------------------------------------------------------------------------------
+Macro AboutBox
+
+---|  Constants  Start  |---
+global Cdpath
+---|  Constants  End     |---
+
+    Go "AboutScreen"
+    when keydown then ReturnAbout
+    when mousedown then ReturnAbout
+    RunPaco (CDpath & "Segues:About", 24)
+
+-----------------------------------------------------------------------------------------------------------------
+
+Macro ReturnAbout
+
+---|  Constants  Start  |---
+global Cdpath
+---|  Constants  End     |---
+
+    when keydown then keycheck
+    when mousedown then
+    go label("BootUp") + 1
+   sound playfile 1, (CDpath & "Opening:Iron Helix� Tune")
+-----------------------------------------------------------------------------------------------------------------
+Macro ReplayIntro
+
+---|  Constants  Start  |---
+global Cdpath
+---|  Constants  End     |---
+
+    set the castnum of sprite ( the clickon) = the castnum of sprite( the clickon ) + 1
+    updatestage
+    Delayof(15)
+    sound stop 1
+    go frame ( label("BridgeBG") + 1 )
+    RunPaco (CDpath & "Opening:OPENING", 24)
+    go frame  ( label("BootUp") + 1 )
+    sound playfile 1, (CDpath & "Opening:Iron Helix� Tune")
+-----------------------------------------------------------------------------------------------------------------
+Macro QuitFromBoot
+
+    set the castnum of sprite ( the clickon) = the castnum of sprite( the clickon ) + 1
+    updatestage
+     repeat with counter = 0 to 4
+        puppetsprite ( counter + 10), false
+    end repeat
+    Delayof(15)
+    CleanUpAndQuit
+-----------------------------------------------------------------------------------------------------------------
+Macro CleanUpAndQuit
+
+---|  Constants  Start  |---
+global VolumeSprite, CDpath
+---|  Constants  End     |---
+
+
+global DeathFile, NodeFile, ScanFile, CompFile, CmpPort, DefMapPnt, ProbeMapPnt, Carpet, volumeObj
+
+    puppetsprite VolumeSprite, false
+    go "QuitFrame"
+    sound stop 1
+    set WhichSegue = CDpath & "Segues:Credits"
+    RunPaco ( WhichSegue, 24 )
+
+    if objectp( DeathFile ) then DeathFile( mdispose )
+    if objectp( NodeFile ) then NodeFile( mdispose )
+    if objectp( ScanFile ) then ScanFile( mdispose )
+    if objectp( CompFile ) then CompFile( mdispose )
+    if objectp( CmpPort ) then CmpPort( mdispose )
+    if objectp( DefMapPnt ) then DefMapPnt( mdispose )
+    if objectp( ProbeMapPnt ) then ProbeMapPnt( mdispose )
+    if objectp( Carpet ) then Carpet( mDispose )
+    if objectP( volumeObj ) then volumeObj( mDispose )
+    closexlib
+    quit
+-----------------------------------------------------------------------------------------------------------------
+Macro About
+
+global SkillLevel
+
+    set the castnum of sprite ( the clickon) = the castnum of sprite( the clickon ) + 1
+    updatestage
+    Delayof(15)
+   RunPaco (CDpath & "Opening:OPENING", 2)
+-------------------------------------------------------------------------------------------------------------------
+Factory ArrayStructure
+  -- No methods...all predefinded

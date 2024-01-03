@@ -1,0 +1,22 @@
+-- Text 
+--
+-------------------------------------------------------------------------------------------------------------------
+macro WriteText TheString, TheCastNum
+global NewNodeText
+   set TextLineTemp = empty
+   set NumOfchars = the length of TheString
+    repeat with CharCounter = 1 to NumOfchars
+        set TextLineTemp = TextLineTemp & chars(TheString,CharCounter,CharCounter + 2)
+        set the text of cast TheCastNum = TextLineTemp
+        set CharCounter = CharCounter + 2
+    end repeat
+-------------------------------------------------------------------------------------------------------------------
+macro ClearText TheCastNum
+    set the text of cast TheCastNum = empty
+    updatestage
+-------------------------------------------------------------------------------------------------------------------
+macro ResetCast TheSprite, TheCastnum, TheLocH, TheLocV
+    set the castnum of sprite TheSprite = TheCastnum
+    set the loch of sprite TheSprite = TheLocH
+    set the locv of sprite TheSprite = TheLocV
+-------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,288 @@
+--  Inits
+--
+-------------------------------------------------------------------------------------------------------------------
+Macro InitSprites
+
+---|  Constants  Start  |---
+global Pacosprite, ArmSprite, CBLightSprite, LightSprite, MapSprite, ProbeMapSprite, DefMapSprite
+global ScreenCntrlSprite, FnctBtnSprite, ModeBtnSprite, NavStartSprite, VolumeSprite, SegueSprite
+global PanelSprite, ScnBoxSprite, ScanHiliteSprite
+---|  Constants  End     |---
+
+    set Pacosprite = 1
+    set ArmSprite = 2
+    set ScnBoxSprite = Armsprite
+
+    set CBLightSprite = 4
+    set MapSprite = 6
+    set ProbeMapSprite = 7
+    set DefMapSprite = 8
+
+    set ScreenCntrlSprite = 9
+    set EnergyLevelSprite = 10
+
+    set FnctBtnSprite = 15
+    set ModeBtnSprite = 16
+    set NavStartSprite = 17
+    set VolumeSprite = 5
+
+    set ScanHiliteSprite = 23
+    set SegueSprite = 24
+    set PanelSprite = 24
+
+    ImmediateOn ( FnctBtnSprite, FnctBtnSprite + 8 )
+    ImmediateSprite ScreenCntrlSprite, True
+    ImmediateSprite Pacosprite, True
+    ImmediateSprite VolumeSprite, True
+-------------------------------------------------------------------------------------------------------------------
+Macro InitCastMembers
+
+---|  Constants  Start  |---
+global StartScnPtCast, ScnPnlStrtCst, ScanStartCast, LightCastnum, StartCastBtn, FunctBtnCast, ModeBtnCast
+global NavCast, CBLightCast, StartArmCast, MaxArmCast, MapStartCast, ProbeCastNum, StartCastDoor, ElevatorStartCast
+global ClearanceStart, CrewStrtCast, CntrlStrtCast, NodeScreenCast, ScreenCntrlSprite, DoorStartCast, PacoSprite
+global CompHiliteStartCast, CodeCast, AuthNumCast, ScreenCast, ScnStartText, ScanInterFaceCast, LightSprite
+global GameCntrlCast
+---|  Constants  End     |---
+
+global SavedGameLoaded
+
+    set ScreenCast = D35
+     set CodeCast = D41
+
+    set GameCntrlCast = D78
+    set AuthNumCast = D61
+    set StartScnPtCast = B45
+    set ScnPnlStrtCst = B52
+    set ScanStartCast = B41
+    set CompHiliteStartCast = C71
+    set ScnStartText = D44
+    set ScanInterFaceCast = C61
+
+    set LightCastnum = A62
+    set StartCastBtn = A21
+    set FunctBtnCast = A51
+    set ModeBtnCast = A64
+    set NavCast = A57
+    set CBLightCast = A46
+
+    set StartArmCast = A86
+    set MaxArmCast = StartArmCast + 26
+
+    set MapStartCast = A77
+    set ProbeCastNum = A68
+
+    set NodeScreenCast = B61
+    set DoorStartCast = B68
+    set ElevatorStartCast = B74
+
+    set ClearanceStart = F31
+    set CrewStrtCast = C32
+    set CntrlStrtCast = C12
+   if not SavedGameLoaded then
+        set the picture of cast NavCast = the picture of cast A62
+    end if
+    set the castnum of sprite PacoSprite = NavCast
+    repeat with counter = 0 to 5
+        set the castnum of sprite (ScreenCntrlSprite + counter) = 0
+    end repeat
+    
+-------------------------------------------------------------------------------------------------------------------
+Macro CreateCodes
+
+---|  Constants  Start     |---
+global CodeCast
+---|  Constants  End     |---
+
+global GameVidClues, SkillLevel
+
+    set WhichVidGame = (random( 2 ) - 1) + the number of cast "GameVidList"
+    set GameVidClues = line (SkillLevel * 2) of the text of cast WhichVidGame
+    set CodeCast = D41
+    set CodeString = "Clear 6742 2346 3276 8294 1111 6364 0718 0135 2345 2468 9876 1911 4455 6273 0918 0000 7777 3654 6543 2382 8282 1357 1357 9999 6078 8675 4021 2112 0142 1313 5218 6921 4983 5555 5432 "
+    set Authcode = "Clear"
+    set TempCodeVar = the text of cast (CodeCast + 1)
+    repeat with counter = 1 to 4
+
+        repeat while CodeString contains AuthCode
+            set AuthCode = string( random(9000) + 999 )
+        end repeat
+        if counter = 1 then set the text of cast CodeCast = AuthCode
+        else put AuthCode into word (counter - 1) of TempCodeVar
+        set Authcode = "Clear"
+      
+    end repeat
+    set the text of cast (CodeCast + 1) = TempCodeVar
+-------------------------------------------------------------------------------------------------------------------
+Macro InitConstants
+
+---|  Constants  Start     |---
+global FlushAll, CBLightStartPos, EnergyLevelFull, EnergyLevelOut, CntWindV, CntWindH, CntScreenH, CntScreenV
+global TopOfScreen, BottomOfScreen, LeftOfScreen, RightOfScreen, ScnTargL, ScnTargR, ScnTargT, ScnTargB
+global InitialArmH, InitialArmV, MaxMouseVforArm, MinMouseVforArm, PanelWidth, PanelHeight, NewVol, MapProbeSpeed
+global Pacosprite, ScreenCntrlSprite, ArmSprite
+---|  Constants  End     |---
+
+    set FlushAll = FlushEvents(mnew)
+    set CBLightStartPos = 57
+    set EnergyLevelFull = 473
+    set EnergyLevelOut = 399
+    set CntWindV = the locv of sprite Pacosprite
+    set CntWindH = the loch of sprite Pacosprite
+    set CntScreenH = the loch of Sprite ScreenCntrlSprite
+    set CntScreenV = the locv of Sprite ScreenCntrlSprite
+    set TopOfScreen = the top of Sprite ScreenCntrlSprite
+    set BottomOfScreen = the bottom of Sprite ScreenCntrlSprite
+    set LeftOfScreen = the left of Sprite ScreenCntrlSprite
+    set RightOfScreen = the right of Sprite ScreenCntrlSprite
+
+    set ScnTargL = 51
+    set ScnTargR = 232
+    set ScnTargT = 37
+    set ScnTargB = 123
+
+    set InitialArmH = the loch of sprite ArmSprite
+    set InitialArmV = the locv of sprite ArmSprite
+    set MaxMouseVforArm = 191
+    set MinMouseVforArm = 60
+
+    set PanelWidth = 30
+    set PanelHeight = 30
+
+    set NewVol =  6
+    set the floatPrecision = 2
+    set MapProbeSpeed = 5.0
+
+-------------------------------------------------------------------------------------------------------------------
+Macro InitVars
+
+---|  Constants  Start     |---
+global EnergyLevelFull
+---|  Constants  End     |---
+
+global InstalledInterface, EnergyLevel, IndicatorsInstalled, DoorSensors, NotesUp, DoubleArrow, Inladder, ChangedMode
+global DoorOpen, ProbeControls, ComputerInstalled, MapMode, TargetDoorNode, DefJammed, DefenderReSetTime
+global DefenderTasks, WarningLevel, DefenderRun, DefTreePath, LineOfSight, AutoScanState, AutoScanInstalled, ScanActivated
+global ArmActivated, ScanInstalled, ScanPtActive, SavedGameLoaded, OriginalProbePos, OriginalDefPos, Direction
+global DefspeedAltered, ProbeDead, DefTrapped
+
+   if not SavedGameLoaded then
+        set OriginalDefPos = 5
+        set OriginalProbePos = 87
+        set Direction = 0
+        set EnergyLevel = EnergyLevelFull
+        set DoorSensors = "Active"
+        set ProbeDead = false
+        set DefspeedAltered = false
+        set DefTrapped = false
+   end if
+
+-- Interface/ Assorted Vars
+
+    set InstalledInterface = "None"
+    set IndicatorsInstalled = false
+    set NotesUp = false
+    set DoubleArrow = false
+    set Inladder = false
+    set ChangedMode = True
+    set DoorOpen = false
+    set ProbeControls = false
+    set ComputerInstalled = false
+    set MapMode = 1
+    set TargetDoorNode = "Null"
+
+-- Defender Vars
+
+    set DefJammed = false
+    set WarningLevel = 3
+    set DefenderRun = 0
+    set DefRoaming = true
+    set WarningLOS = empty
+    set DefTreePath = empty
+    set DefNodePath = empty
+    set DefTreePath = empty
+    set LineOfSight = empty
+
+-- Scan/Arm Vars
+
+    set AutoScanInstalled = false
+    set ScanActivated = false
+    set ArmActivated = false
+    set ScanInstalled = false
+    set ScanPtActive = 0
+
+-------------------------------------------------------------------------------------------------------------------
+Macro InitPathsToDBs
+
+---|  Constants  Start  |---
+global IronHelixLocalFolder, NodeData, DefData, CmpPortData, MapData, ScanData, CDpath, SeguePath, DeathData
+global ComputerPacoPath, CompData, CmpPacoPath, HDpath
+---|  Constants  End     |---
+
+global SkillLevel
+
+    set IronHelixLocalFolder = the pathname & "Databases:"
+    set DeathData = IronHelixLocalFolder & "DeathDB"
+    set ScanData = IronHelixLocalFolder & "ScanDB #" & string( SkillLevel )
+
+    set HDpath = the pathname
+    set CDpath = "Iron Helix� CD:Iron Helix� Files:"
+-------------------------------------------------------------------------------------------------------------------
+Macro InitDBs
+
+---|  Constants  Start  |---
+global  DefDBVar, NodeDBVar, MapDBVar, CmpPortDBVar, CmpDBVar, ProbeFailures, DeathStringLength, ScanStringLength
+global DeathData, ScanData
+---|  Constants  End     |---
+
+global Direction, CurNavTreePos, ProbeMapPos, DefFilePos, DefMapPos, PrevDefLevel, DefLevel, OriginalProbePos
+global OriginalDefPos
+
+    InitPathsToDBs
+
+    set DefDBVar = the text of cast F81
+    set NodeDBVar = the text of cast F82
+    set MapDBVar = the text of cast F83
+    set CmpPortDBVar = the text of cast F84
+    set CmpDBVar = the text of cast F85
+    set ProbeFailures = the text of cast "ProbeFail"
+
+    set CurNavTreePos = OriginalProbePos
+    set ProbeMapPos = OriginalProbePos
+    TraverseTree (0)
+
+    set DefFilePos = OriginalDefPos
+    set DefMapPos = OriginalDefPos
+    TraverseDefTree (0)
+    set PrevDefLevel = DefLevel
+
+    ReadTextFile( DeathData, "DeathFile" )                                -- Death  DataBase
+    set InfoString = Readln( "DeathFile" )
+    set DeathStringLength = the length of InfoString
+
+    ReadTextFile( ScanData, "ScanFile" )
+    set InfoString = Readln( "ScanFile" )
+    set ScanStringLength = length( InfoString )
+
+-------------------------------------------------------------------------------------------------------------------
+Macro InitGame
+
+global DefenderOff
+
+    InitSprites
+   InitCastMembers
+   InitConstants
+   InitVars
+   InitDBs
+    InitialNavPaco
+    ParseNodeString
+
+    set DefenderOff = false
+   SetDefenderRun
+  AdvDefender
+   when timeout then AdvDefender
+
+    when keydown then KeyCheck
+   InstallMap ( 2, 2 )
+    InitNode
+    sound stop 1
