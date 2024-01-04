@@ -1,0 +1,687 @@
+-- Comp
+--
+-------------------------------------------------------------------------------------------------------------------
+Macro ComputerScreen
+
+---|  Constants  Start  |---
+---|  Constants  End     |---
+
+global InstalledInterface, ProbeMode, PanelInstalled, FlushAll
+
+    set CapturedV = the mousev
+    set CapturedH = the mouseh
+   FlushAll (mflush)
+
+    if InstalledInterface = "Controls" then ProbeControl ( CapturedH, CapturedV )
+   else if InstalledInterface = "Computer" then OperateComputer ( CapturedH, CapturedV )
+    else if InstalledInterface = "Scan" then ScanInterface ( CapturedH, CapturedV )
+    else if (InstalledInterface = "Door") or (InstalledInterface = "Elevator") then PanelInterface ( CapturedH, CapturedV )
+
+-------------------------------------------------------------------------------------------------------------------
+Macro HeadsUpDisplay
+
+---|  Constants  Start  |---
+---|  Constants  End     |---
+
+global ScanActivated, ArmActivated, AutoScanState, AHotSpot, InstalledInterface
+
+    set CapturedH = the mouseh
+    set CapturedV = the mousev
+
+   if ScanActivated and not (InstalledInterface = "Scan") then
+
+            if (AutoScanState = 0) then OperateScan ( CapturedH, CapturedV )
+            else if AHotSpot then AutoScan ( CapturedH, CapturedV )
+
+    else if ArmActivated then OperateArm ( CapturedH, CapturedV )
+
+-------------------------------------------------------------------------------------------------------------------
+Macro PanelInterface CapturedH, CapturedV
+
+---|  Constants  Start  |---
+global ProbeMapSprite, CntScreenH, CntScreenV, ScreenSprite, InstalledInterface, PanelSprite, DoorStartCast
+global ElevatorStartCast
+---|  Constants  End     |---
+
+global DoorOpen, Level
+
+    set InitialClick = true
+    If (CapturedH < 436) and (CapturedH > 352) and (CapturedV < 75) and (CapturedV > 62) then
+            if DoorOpen then set WhichHilite = DoorStartCast + 3
+                else set WhichHilite = DoorStartCast + 1
+            ResetCast( PanelSprite, WhichHilite, CntScreenH, CntScreenV )
+            updatestage
+            DoorAction
+    else if (InstalledInterface = "Elevator") then
+        set LevelSelected = ((CapturedH - 352)/22) + 1
+        set the trails of sprite PanelSprite = true
+        if (CapturedH < 480) and (CapturedH > 352) and (CapturedV < 91) and (CapturedV > 76) �
+                                                                          and (LevelSelected <> Level) and ((CapturedH - 352) mod 22) < 18 then
+                    if DoorOpen then
+                            ResetCast( PanelSprite,  ElevatorStartCast + 7 + LevelSelected, CntScreenH, CntScreenV )
+                            updatestage
+                            DoorAction
+                    end if
+                    set the trails of sprite PanelSprite = true
+                    ResetCast( PanelSprite,  ElevatorStartCast + 7 + LevelSelected, CntScreenH, CntScreenV )
+                    updatestage
+                    set the trails of sprite PanelSprite = false
+                    OperateElevator( LevelSelected )
+
+         end if
+    end if
+-------------------------------------------------------------------------------------------------------------------
+Macro InstallControls
+
+---|  Constants  Start  |---
+global ScreenCntrlSprite, CntrlStrtCast, CntScreenH, CntScreenV
+---|  Constants  End     |---
+
+global InstalledInterface, AutoScanState, IndicatorsInstalled, ScanActivated, ArmActivated
+
+    if ScanActivated then DeInstallScan
+    else if ArmActivated then DeInstallArm
+
+    set IndicatorsInstalled = false
+    set InstalledInterface = "Controls"
+    set the castnum of sprite (ScreenCntrlSprite + 1) = 0
+    ResetCast ( ScreenCntrlSprite, CntrlStrtCast, CntScreenH, CntScreenV )
+    ResetCast ( ScreenCntrlSprite + 2, CntrlStrtCast + 3 + (AutoScanState * 2), CntScreenH, CntScreenV )
+    repeat with counter = 3 to 5
+        set the castnum of sprite (ScreenCntrlSprite + counter) = 0
+    end repeat
+    updatestage
+-------------------------------------------------------------------------------------------------------------------
+Macro PanelHilite TheCast, TheSprite, WhatToExecute
+
+---|  Constants  Start  |---
+global CntScreenH, CntScreenV
+---|  Constants  End     |---
+
+    ResetCast( TheSprite, TheCast , CntScreenH, CntScreenV )
+    updatestage
+    starttimer
+    repeat while the mousedown
+        if rollover( TheSprite ) then set the castnum of sprite TheSprite = TheCast
+            else set the castnum of sprite TheSprite = TheCast - 1
+        updatestage
+    end repeat
+    if the timer < 20 then delayof(10)    
+    set DoAction = (the castnum of sprite TheSprite = TheCast)
+    set the castnum of sprite TheSprite = 0
+    if DoAction then do WhatToExecute
+    return( DoAction )
+-------------------------------------------------------------------------------------------------------------------
+Macro CntrlClickOn CapturedH, CapturedV
+
+    set Hilight = "None"
+    if (CapturedH < 457) and (CapturedH  > 355) and (CapturedV  < 98) then
+  
+            if (CapturedV  < 67) and (CapturedV  > 56) then set Hilight = "1"
+            else if (CapturedV  < 83) and (CapturedV  > 72) then set Hilight = "2"
+            else if (CapturedV  < 99) and (CapturedV  > 88) then set Hilight = "3"
+  
+    else if (CapturedV  < 131) and (CapturedV > 120) then
+
+            if (CapturedH  < 485) and (CapturedH  > 451) then set Hilight = "Quit"
+            else if  (CapturedH  < 447) and (CapturedH  > 413) then set Hilight = "Prev"
+
+    else if (CapturedV  < 115) and (CapturedV  > 103) and (CapturedH  < 475) and (CapturedH  > 355) then set Hilight = "Delete"
+    return( Hilight )
+
+-------------------------------------------------------------------------------------------------------------------
+Macro ProbeControl CapturedH, CapturedV
+
+---|  Constants  Start  |---
+global CntrlStrtCast, ScreenCntrlSprite, CntScreenH, CntScreenV, PanelSprite
+---|  Constants  End     |---
+
+global InstalledInterface, ProbeControlState, AutoScanState
+
+   set WhichHilite = CntrlClickOn ( CapturedH, CapturedV )
+   set HiliteSprite = PanelSprite
+  set ProbeControlState = the name of cast (the castnum of sprite ScreenCntrlSprite)
+
+    if WhichHilite = "Quit" then
+
+        PanelHilite(CntrlStrtCast + 10,HiliteSprite, "ExitControls")
+
+   else if ProbeControlState = "PC.Menu" then
+
+        if WhichHilite = "1" then PanelHilite (CntrlStrtCast + 2, HiliteSprite, "SetUpDNAKitty")
+        else if WhichHilite = "2" then PanelHilite (CntrlStrtCast + 4 + (AutoScanState * 2), HiliteSprite, "ToggleAutoScan")
+        else if WhichHilite = "3" then PanelHilite (CntrlStrtCast + 8, HiliteSprite,"RebootProbe")
+
+    else if ProbeControlState = "PC.Inventory" then 
+
+        if WhichHilite = "1"  then HiliteDNA (ScreenCntrlSprite + 2, 1) 
+        else if WhichHilite = "2"  then HiliteDNA (ScreenCntrlSprite + 3, 2)
+        else if WhichHilite = "3"  then HiliteDNA (ScreenCntrlSprite + 4, 3)
+        else if WhichHilite = "Delete" then PanelHilite(CntrlStrtCast + 15 , HiliteSprite, "DeleteDNA") 
+      else if WhichHilite = "Prev" then PanelHilite (CntrlStrtCast + 12, HiliteSprite, "InstallControls")
+                    
+   end if
+-------------------------------------------------------------------------------------------------------------------
+Macro ProbeFails NoEnergy
+
+---|  Constants  Start  |---
+global NavCast, NavStartSprite, Pacosprite, LightSprite, FnctBtnSprite, StartCastBtn, FunctBtnCast, ModeBtnSprite
+global ModeBtnCast, ProbeMapSprite, DefMapSprite, MapSprite, MapStartCast, ProbeCastNum, ScreenCntrlSprite
+global LightCastnum, CBLightSprite, CBLightCast, CntScreenH, CntScreenV, HDPath, CDPath
+---|  Constants  End     |---
+
+global Node, Direction, ProbeDead
+
+    RunNavPaco ( CDPath & "Probe Failure:" & Node & "." & Direction & ".PC", PacoSprite, "None" )
+    set ProbeDead = true
+     repeat with counter = 0 to 5
+           set the castnum of sprite (NavStartSprite + counter) = 0
+    end repeat
+
+    ScreenToCast (Pacosprite, NavCast)
+    updatestage
+
+    if NoEnergy then
+       set whichPaco  = HDPath & "Misc Files:PowerLow"
+        puppetsound "SysBeeb" 
+        RunPacoNodeText( whichPaco)
+        Delayof(120)
+        NewProbe ( NoEnergy )
+    else
+        set whichPaco  = HDPath & "Misc Files:ReBoot"
+        puppetsound "SysBeeb" 
+        RunPacoNodeText( whichPaco)
+    end if
+
+-------------------------------------------------------------------------------------------------------------------
+Macro RebootProbe
+
+---|  Constants  Start  |---
+global NavCast, NavStartSprite, Pacosprite, LightSprite, FnctBtnSprite, StartCastBtn, FunctBtnCast, ModeBtnSprite
+global ModeBtnCast, ProbeMapSprite, DefMapSprite, MapSprite, MapStartCast, ProbeCastNum, ScreenCntrlSprite
+global LightCastnum, CBLightSprite, CBLightCast, CntScreenH, CntScreenV, CDPath, EnergyLevelOut, PanelSprite
+---|  Constants  End     |---
+
+global MapMode, Node, Direction, DefspeedAltered, EnergyLevel, ProbeDead
+
+
+     repeat with counter = 0 to 5
+           set the castnum of sprite (NavStartSprite + counter) = 0
+    end repeat
+    set the castnum of sprite Pacosprite = NavCast + 2
+    set the castnum of sprite MapSprite = 0
+    repeat with counter = 0 to 4
+       set the castnum of sprite (ScreenCntrlSprite + counter) = 0
+    end repeat
+    set the castnum of sprite ProbeMapSprite = 0
+    set the castnum of sprite DefMapSprite = 0
+    set the castnum of sprite CBLightSprite = 0
+    set the castnum of sprite FnctBtnSprite = 0
+    set the castnum of sprite ModeBtnSprite = 0
+    updatestage
+    DelayOf(30)
+
+    set delaytime = 7
+    repeat with counter = 0 to  5
+           set the castnum of sprite (NavStartSprite + counter) = StartCastBtn + (Counter *3)
+    end repeat
+    updatestage
+    DelayOf(delaytime)
+
+     repeat with counter = 0 to  5
+           set the castnum of sprite (NavStartSprite + counter) = 0
+    end repeat
+    updatestage
+    DelayOf(delaytime)
+
+    set the castnum of sprite FnctBtnSprite = FunctBtnCast + 1
+    set the castnum of sprite ModeBtnSprite = ModeBtnCast
+    ResetCast(LightSprite, LightCastnum + 1, CntScreenH,CntScreenV)
+     set the castnum of sprite CBLightSprite = CBLightCast
+    updatestage
+    DelayOf(delaytime)
+
+    set the castnum of sprite FnctBtnSprite = 0
+    set the castnum of sprite ModeBtnSprite = 0
+    set the castnum of sprite CBLightSprite = 0
+    set the castnum of sprite LightSprite = 0
+    updatestage
+    DelayOf(delaytime)
+
+    repeat with counter = 0 to 6
+        set the castnum of sprite MapSprite = MapStartCast + counter
+        updatestage
+    end repeat
+     set the castnum of sprite MapSprite = 0
+    updatestage
+    DelayOf(15)
+  
+    set MapMode = 1
+    set the castnum of  sprite ModeBtnSprite = ModeBtnCast + MapMode
+    set the castnum of sprite ProbeMapSprite = ProbeCastNum
+    InstallMap (2, 2)
+     if ProbeDead then RunNavPaco ( CDPath & "Probe Failure:" & Node & "." & Direction & ".RB", PacoSprite, "None" )
+     set the castnum of sprite FnctBtnSprite = FunctBtnCast
+    set the castnum of sprite CBLightSprite = CBLightCast
+    ScreenToCast (Pacosprite, NavCast)
+    set the castnum of sprite Pacosprite = NavCast
+    Initnode
+    updatestage
+-------------------------------------------------------------------------------------------------------------------
+Macro ToggleAutoScan
+
+global AutoScanState, ScreenCntrlSprite, CntrlStrtCast
+
+    set AutoScanState = (AutoScanState + 1) mod 2
+    if AutoScanState = 0 then set the castnum of sprite (ScreenCntrlSprite + 2) = CntrlStrtCast + 3
+        else set the castnum of sprite (ScreenCntrlSprite + 2) = CntrlStrtCast + 5
+    updatestage
+-------------------------------------------------------------------------------------------------------------------
+Macro HiliteDNA TheSprite, whichitem
+
+---|  Constants  Start  |---
+global  CrewStrtCast
+---|  Constants  End     |---
+
+global DNAKitty, DNASelected
+
+    set CrewTemp = item whichitem of DNAKitty
+    if CrewTemp <> empty then 
+       if the castnum of sprite TheSprite = (CrewStrtCast + (value(CrewTemp) - 1) * 2) then set HiliteActive = 1
+           else set HiliteActive = 0
+       set the castnum of sprite TheSprite = (CrewStrtCast + (value(CrewTemp) - 1) * 2) + HiliteActive
+       put string(HiliteActive) into item whichitem of DNASelected
+   end if
+   updatestage
+-------------------------------------------------------------------------------------------------------------------
+Macro JamDefender
+
+---|  Constants  Start  |---
+global  ProbeMapSprite, CntrlStrtCast, FnctBtnSprite, FunctBtnCast, EnergyLevelOut, DefMapSprite, FlushAll
+---|  Constants  End     |---
+
+global DefJammed, EnergyLevel, IndicatorsInstalled, ScreenCntrlSprite, NotesUp,  DefenderRun, WarningLevel, DefenderOff
+global DefNodePath, CBLightSprite, skilllevel
+
+
+    if (EnergyLevel > (EnergyLevelOut + 10) ) then
+
+         if not DefenderOff then 
+                if skilllevel = 1 then set the timeoutlength = 400
+                else if skilllevel = 5 then set the timeoutlength = 250
+                else set the timeoutlength = 250
+
+                set DefJammed = true
+                set the castnum of sprite CBLightSprite = 0
+          end if
+
+           Puppetsound "Jamming"
+            if IndicatorsInstalled then
+                  repeat with Dummy = 1 to 10
+                       SpriteBox (ScreenCntrlSprite + 1),  399, 125,  (EnergyLevel - Dummy), 130
+                       updatestage
+                  end repeat
+            end if
+            set EnergyLevel = (EnergyLevel - 10)
+            
+
+   else  puppetsound "SysBeeb"  
+   FlushAll( mflush )
+-------------------------------------------------------------------------------------------------------------------
+Macro DeleteDNA 
+
+global DNAkitty, DNASelected
+
+    set DNATemp = empty
+    set TempCounter = 1
+    repeat with counter = 1 to 3
+        if  (item counter of DNASelected = "0") and (item counter of DNAKitty <> empty) then 
+            put item counter of DNAKitty into item TempCounter of DNATemp
+            set TempCounter = TempCounter + 1
+        end if
+   end repeat
+   set DNAkitty = DNATemp
+   SetUpDNAKitty
+-------------------------------------------------------------------------------------------------------------------
+Macro CntrlSelect TheSprite, whichitem
+global DNAKitty, ScreenSprite, ProbeMapSprite, DefMapSprite, ArmSprite, CntrlStrtCast, inventory, CrewStrtCast
+
+     set CrewTemp = item whichitem of DNAKitty
+     if CrewTemp <> empty then 
+           if the castnum of sprite TheSprite = (CrewStrtCast + integer(CrewTemp) * 2) then 
+                    set the castnum of sprite TheSprite = (CrewStrtCast + 1 + integer(CrewTemp) * 2)
+            else set the castnum of sprite TheSprite = (CrewStrtCast + integer(CrewTemp) * 2)
+      end if
+
+-------------------------------------------------------------------------------------------------------------------
+Macro SetUpDNAKitty
+
+---|  Constants  Start  |---
+global  ScreenCntrlSprite, CrewStrtCast, CntrlStrtCast
+---|  Constants  End     |---
+
+global DNASelected, DNAKitty
+
+    set DNAScreenCordinates = "61,77, 93"                                          -- Constants...3 positions of DNA
+    set DNASelected ="0,0,0"                                                                -- None selected
+    set the castnum of sprite ScreenCntrlSprite = (CntrlStrtCast + 13)
+
+    repeat with counter = 1 to 3
+        set CrewTemp = item counter of DNAKitty
+        set HiliteH = 436
+        set HiliteV = value(item (counter) of DNAScreenCordinates)
+        if CrewTemp <> empty then set WhichCast = CrewStrtCast + (value(CrewTemp) - 1) * 2
+            else set WhichCast = 0
+        ResetCast( ScreenCntrlSprite + 1 + counter, WhichCast,  HiliteH,  HiliteV )       
+    end repeat
+    updatestage
+
+-------------------------------------------------------------------------------------------------------------------
+Macro DeInstallControls
+
+---|  Constants  Start  |---
+global  FnctBtnSprite, FunctBtnCast , ScreenCntrlSprite
+---|  Constants  End     |---
+
+    repeat with counter = 0 to 5
+        set the castnum of sprite (ScreenCntrlSprite + counter) = 0
+    end repeat
+    updatestage
+    InstallNodeScreen
+
+-------------------------------------------------------------------------------------------------------------------
+Macro ExitControls
+
+---|  Constants  Start  |---
+global  FnctBtnSprite, FunctBtnCast 
+---|  Constants  End     |---
+
+   set the castnum of sprite FnctBtnSprite = FunctBtnCast
+    DeInstallControls
+-------------------------------------------------------------------------------------------------------------------
+--
+--
+
+
+-- Comp
+--
+------------------------------------------------------------------------------------------------------------------
+
+Macro DismissElevator
+
+---|  Constants  Start  |---
+global  ScreenSprite, ProbeMapSprite,  CntScreenH, CntScreenV, StartCastDoor, UtilitySprite, DefMapSprite
+---|  Constants  End     |---
+
+    set the castnum of sprite ScreenSprite = 0
+    set the castnum of sprite ProbeMapSprite = 0
+    set the castnum of sprite DefMapSprite = 0
+
+-------------------------------------------------------------------------------------------------------------------
+Macro InstallComputer
+
+---|  Constants  Start  |---
+global  ScreenCntrlSprite, PanelSprite, CmpDBVar
+---|  Constants  End     |---
+
+global  InstalledInterface, MenuOptionString, MenuTypeString, IndicatorsInstalled, MenuType, MenuName, CompPacoUp
+global GameVidClues, Node, VidAtThisNode, Direction, CntScreenH,  CntScreenV, VideoUp, GamePhase, LocationPos
+
+    DeInstallNodeScreen
+   set InstalledInterface = "Computer"
+    
+    set the castnum of sprite ScreenCntrlSprite = the number of cast "Main"
+    set NodeDirect = Node & "-" & Direction
+
+    if (GameVidClues contains NodeDirect) and (GamePhase > 1) then
+        set counter = 1
+        set done = false
+
+        repeat while (not done)
+            set VidclueString =  item counter of GameVidClues
+            if VidclueString contains NodeDirect then
+                    if NodeDirect contains "L" then set VidAtThisNode = chars(VidclueString,10,12)
+                    else set VidAtThisNode = chars(VidclueString,8,10)
+                    set done = true
+                    ResetCast ((ScreenCntrlSprite + 2) ,the number of cast "Mssg", CntScreenH, CntScreenV)
+            end if
+            set counter = counter + 1
+        end repeat
+          
+    else set VidAtThisNode = "None"
+    updatestage
+
+    set MenuTypeString = line 2 of CmpDBVar
+    set MenuOptionString = line 3 of CmpDBVar
+    set LocationPos = 3
+
+    set MenuType = item 1 of MenuTypeString
+    set MenuName = item 2 of MenuTypeString
+    set CompPacoUp = false
+    set VideoUp = false
+-------------------------------------------------------------------------------------------------------------------
+
+Macro OperateComputer CapturedH, CapturedV
+ 
+---|  Constants  Start  |---
+global  ScreenCntrlSprite, PanelSprite,  FlushAll
+---|  Constants  End     |---
+
+global MenuOptionString, MenuTypeString, CmpMenuDBstring, MenuType, MenuName, CompPacoUp
+
+     if (the name of cast (the castnum of sprite ScreenCntrlSprite) = "Auth" ) then EnterAuth ( CapturedH, CapturedV, "Null")
+    else
+        set ItemSelected =  MenuItemSelected ( CapturedH, CapturedV )
+        if ItemSelected <> "None" then 
+        
+               if CompPacoUp and (ItemSelected = 5) then PacoErase
+            else if (ItemSelected = 9) or (ItemSelected = 13) then RunVideoPaco
+            else if (ItemSelected = 14) then VideoCont
+                else if (ItemSelected >= 5) or (MenuType <> "Menu") then do( chars(CmpMenuDBstring, 1,4) )
+                else if Cleared( chars(CmpMenuDBstring,11,12) ) then
+                        if  InLocation( ItemSelected ) then do( chars(CmpMenuDBstring, 1,4) )    -- function from ComputerDB                         
+                end if
+
+         end if
+         FlushAll( mflush )
+     end if
+
+
+------------------------------------------------------------------------------------------------------------------
+Macro VideoCont 
+ 
+---|  Constants  Start  |---
+global   ScreenCntrlSprite, PanelSprite
+---|  Constants  End     |---
+
+global VideoUp
+
+    set the castnum of sprite (ScreenCntrlSprite + 2) = the number of cast "Mssg"
+    set the castnum of sprite ScreenCntrlSprite = the number of cast "Main"
+    set the castnum of sprite PanelSprite = 0
+    set VideoUp = false
+    updatestage
+------------------------------------------------------------------------------------------------------------------
+Macro RunVideoPaco 
+ 
+---|  Constants  Start  |---
+global  CDPath, PanelSprite, ScreenCntrlSprite, NotesCast, NavCast, PacoSprite
+---|  Constants  End     |---
+
+global VidAtThisNode, VideoUp, VidCluesAvail, CompItemSelect, GameAvailClues, GamePhase
+     
+   if (CompItemSelect = 9) then                                                                                             -- message
+        set the castnum of sprite ScreenCntrlSprite = the number of cast "EmptyScreen"
+         set the castnum of sprite PanelSprite = 0
+        set the castnum of sprite (ScreenCntrlSprite + 2) = 0
+        set VideoUp = true
+        set VidAtThisNodeNum = chars(VidAtThisNode,1,2)
+        ResetCast( (ScreenCntrlSprite + 1), A43, -10, -10) 
+
+        if not (VidCluesAvail contains VidAtThisNodeNum) then
+            set VidCluesAvail = VidCluesAvail & VidAtThisNode & ","
+            set NotesCast = the number of cast "NotesCast"
+            if (the text of cast NotesCast) = (the text of cast "NotesDefault") then 
+               set Dummy = line value(VidAtThisNodeNum) of the text of cast (NotesCast - 1)
+            else 
+              set NumOfLines = (the number of lines of the text of cast NotesCast) + 1
+              set Dummy =  line value(VidAtThisNodeNum) of the text of cast (NotesCast - 1) & Return & the text of cast NotesCast
+            end if
+            set the text of cast NotesCast = Dummy
+         end if
+
+         updatestage
+      end if
+
+    set whichPaco = CDPath & "Video:Video " & chars(VidAtThisNode,1,2)
+    XPlayAnim whichPaco, (the stageLeft + 335), (the stageTop + 15)
+
+    if (GamePhase = 2) and ((VidCluesAvail contains "*") and (VidCluesAvail contains "+")) then AdvLevel( 3 )
+------------------------------------------------------------------------------------------------------------------
+
+Macro AdvLevel WhatLevel
+
+---|  Constants  Start  |---
+global   PacoSprite, NavCast, CDpath
+---|  Constants  End     |---
+
+global GamePhase
+
+
+    set GamePhase = WhatLevel
+    ScreenToCast( PacoSprite, NavCast )
+    go frame "BridgeBG"
+    sound stop  1
+    RunPaco (CDpath & "Opening:Phase" & string(WhatLevel - 1), 24)
+    ReturnToGame
+
+------------------------------------------------------------------------------------------------------------------
+Macro InLocation ItemSelected
+ 
+---|  Constants  Start  |---
+global  CompStringLength, CmpDBVar
+---|  Constants  End     |---
+
+global CompLocString, Node, Direction, LocationPos
+
+    if ItemSelected <= 4 then
+
+        set CmpDBfilePos = LocationPos + ItemSelected
+        set CompLocString = item 1 of (line CmpDBfilePos of CmpDBVar)
+        set CompCheckLoc = Node & "." & String(Direction)
+
+        if (CompLocString = "#") or (CompLocString contains CompCheckLoc) then return( true )
+        else
+            DoCmpAction ( "AccessDeniedLoc", "None")
+            PacoErase
+            return( false )
+         end if
+
+    else return(true)
+------------------------------------------------------------------------------------------------------------------
+-- Saving incase we go back to a delay at end of pacos
+
+Macro PacoErase
+
+---|  Constants  Start  |---
+global  ScreenCntrlSprite, PanelSprite
+---|  Constants  End     |---
+
+global PreAuthScreen, CompPacoUp, AuthNumCast, AuthCodeVar
+
+    set CompPacoUp = false
+    set the castnum of sprite PanelSprite = 0
+    set PrePacoScreen = the castnum of sprite ScreenCntrlSprite
+    set the castnum of sprite ScreenCntrlSprite = the number of cast "Blank"
+    set the castnum of sprite (ScreenCntrlSprite + 1) = 0
+    updatestage
+    set the castnum of sprite ScreenCntrlSprite = PrePacoScreen
+    if  the name of cast  PrePacoScreen = "Auth" then
+        set AuthCodeVar = empty
+        set the text of cast AuthNumCast = AuthCodeVar
+        ResetCast(ScreenCntrlSprite + 1, AuthNumCast, 353, 55)
+    end if
+    updatestage
+------------------------------------------------------------------------------------------------------------------
+Macro MenuItemSelected CapturedH, CapturedV
+
+---|  Constants  Start  |---
+global  PanelSprite, CompHiliteStartCast, CntScreenH, CntScreenV, CompStringLength
+---|  Constants  End     |---
+
+global MenuOptionString, MenuTypeString, CmpDBfilePos, CmpMenuDBstring, CompItemSelect, MenuType, CompPacoUp
+global MenuName, VideoUp, notesup, VidAtThisNode
+
+    set CompItemSelect = "None"
+    if ( CapturedV < 142 ) and ( CapturedV > 128 ) then
+
+          if VideoUp then
+
+                if (CapturedH < 424) and (CapturedH > 357) then set CompItemSelect = 13
+                  else if (CapturedH < 492) and (CapturedH > 426 ) then set CompItemSelect = 14
+                    else set CompItemSelect = "None"
+
+           else if (CapturedH > 459) then set CompItemSelect = 6                                                          -- Exit
+           else if (CapturedH > 427) then set CompItemSelect = 5                                                          -- Prev
+           else if (CapturedH < 401) and (CapturedH > 344) and (MenuName = "Main") and (VidAtThisNode <> "None") then set CompItemSelect = 9                                                                                               -- Mssg
+           else if (CapturedH < 377) and (CapturedH > 344) then set CompItemSelect = 7                        -- Bck
+           else if (CapturedH < 411) and (CapturedH > 377) then set CompItemSelect = 8                        -- Fwd
+           else set CompItemSelect = "None"
+
+    else if ( CapturedV < 124 ) and ( CapturedV > 71 ) then set CompItemSelect = ((CapturedV - 71)/14) + 1
+
+   if (CompItemSelect <> "None") then set CmpMenuDBstring = item CompItemSelect of MenuOptionString
+   else set CmpMenuDBstring = "#"
+
+    if CompPacoUp then 
+        if (CompItemSelect = 5) or (CompItemSelect = 6) then
+                 ResetCast( PanelSprite,(CompHiliteStartCast + CompItemSelect -  3),CntScreenH,CntScreenV)  
+        else return( "None" )
+   else if (CompItemSelect = 9) or VideoUp then
+            ResetCast( PanelSprite,(CompHiliteStartCast + CompItemSelect -  3),CntScreenH,CntScreenV)
+   else if (CmpMenuDBstring <> "#") then
+        if (CompItemSelect <= 4) then 
+               if MenuType contains "Menu" then set WhichCast = CompHiliteStartCast                                     -- Square Hilite
+               else set WhichCast =  (CompHiliteStartCast + 1)                                                                         -- Oval Hilite
+               ResetCast( PanelSprite, WhichCast, CntScreenH, (CompItemSelect * 14) +78)
+        else ResetCast( PanelSprite,(CompHiliteStartCast + CompItemSelect -  3),CntScreenH,CntScreenV) -- Other hilites
+    else return( "None" )
+
+    updatestage
+    return( CompItemSelect )
+
+-------------------------------------------------------------------------------------------------------------------
+macro OperateElevator LevelChosen
+
+---|  Constants  Start  |---
+global PanelSprite, ElevatorStartCast, DefMapSprite, ProbeCastNum
+---|  Constants  End     |---
+
+global  DoorOpen, Level, Nodestring, NoTellPos, Mapmode, DefenderOff, DefLevel
+
+    set ElevatorFloor = Level
+    if Level > LevelChosen then set ElevDirect = -1
+         else set ElevDirect = 1
+   PlaySound ( "Elevator2" )
+   set the castnum of sprite PanelSprite = ElevatorStartCast + 1 + ElevatorFloor
+
+   if (not DefenderOff) and ((MapMode = 2) or ((MapMode = 1) and ( DefLevel = Level ))) then 
+        set the castnum of sprite DefMapSprite = ProbeCastNum + 4
+   end if
+
+    updatestage
+    repeat while ElevatorFloor <> LevelChosen
+          DelayOf ( 100 )
+          set ElevatorFloor = ElevatorFloor + ElevDirect
+           set the castnum of sprite PanelSprite = the castnum of sprite PanelSprite + ElevDirect
+          if ElevDirect = -1 then TraverseTree( item 13 of Nodestring )
+             else TraverseTree( item 12 of Nodestring )
+          --if (Mapmode <> 2) then InstallMap ( 2, 2 )
+           InstallMap ( 2, 2 )
+          updatestage
+    end repeat
+    sound stop 1
+    ParseNodeString
+    DelayOf( 40)
+    DoorAction                                                                                        --- Arrived....Door open
+-------------------------------------------------------------------------------------------------------------------

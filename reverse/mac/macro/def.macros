@@ -1,0 +1,291 @@
+-- Def
+--
+-------------------------------------------------------------------------------------------------------------------
+macro KillUser
+
+---|  Constants  Start  |---
+global  SeguePath, PacoSprite, HDpath, DefMapSprite
+---|  Constants  End     |---
+
+global DefNodeString, Node, TargetDoorNode, LineOfSight, UserDead, DeathFile, IronHelixLocalFolder
+global DeathArray, CurNavTreePos, LengthNodestring, Level, Direction, DirectionString, DefNode, MapMode, CDpath
+global DefLevel, MapInstalled, DeathStringLength, DefPrevNode, DefJammed, WarningLevel, DefNodeStringLength, DoorOpen
+global DoorDeath, DefFilePos, ProbeCastNum, ProbeNum
+
+  when timeout then 
+
+   if DefJammed then
+        set WarningLevel = 1
+        set the castnum of sprite DefMapSprite = ProbeCastNum + 4
+        updatestage
+        SignalWarnings ("Warning One")
+        SignalWarnings ("Warning One")
+        SignalWarnings ("Warning One")
+   end if
+
+    set DefCheck = DefPrevNode & "-" & DefNode
+    set filepos = ( 4 * (CurNavTreePos - 1) + Direction) * DeathStringLength
+    SetFilePos("DeathFile", filepos)
+    set DeathString = Readln( "DeathFile" )
+    set NumberOfItems = the number of items of DeathString
+    if NumberOfItems >= 2 then
+        set counter = 2
+        repeat with counter = 2 to NumberOfItems
+               set CheckforDeath = item counter of DeathString
+               if (CheckforDeath contains DefCheck) or (CheckforDeath contains DoorDeath) then
+                      set DirectStr = DirectionString()
+                      RunPaco (CDpath & "Navigation:L" & Level & ":"   & Node & "." & DirectStr & "." & (counter - 1) , PacoSprite)
+                      RunPaco (HDpath  & "Misc Files:FadeToGreen.Paco", PacoSprite)
+                      NewProbe ( 0 )
+                       exit
+                end if
+         end repeat
+    end if
+
+    PlaySound( "Static")
+    RunPaco (HDpath  & "Misc Files:DeathStatic.Paco", PacoSprite)
+    RunPaco (HDpath  & "Misc Files:FadeToGreen.Paco", PacoSprite)
+
+    NewProbe ( 0 )
+-------------------------------------------------------------------------------------------------------------------
+macro NewProbe NoEnergy
+global WarningLOS, DefTreePath, DefNodePath, DefFilePos, DefNodeStringLength, DefMapPos, MapStringLength
+global IndicatorsInstalled, ProbeNum, Defenderoff, CDpath, GameEndMins, NavCast, HDpath
+    
+    DeInstallNodeScreen
+    go "Segue"
+    sound stop 1
+    set ProbeNum = integer( ProbeNum )
+
+    if NoEnergy then RunPaco (CDpath & "Segues:NoEnergy" &  string( ProbeNum ), 24)
+    else RunPaco (CDpath & "Segues:DefDeath" & string( ProbeNum ), 24)
+
+    if ProbeNum < 3 then
+       set Currtime = ConvertedTime()
+       set the castnum of sprite 23 = ( GameEndMins - Currtime )/10 + E51
+       set the castnum of sprite 22 = ( GameEndMins- Currtime ) mod 10 + E51
+       updatestage
+       DelayOf(120)
+       set ProbeNum =  ProbeNum + 1
+       PlaySound( "Entering" )
+       RunPaco (CDpath & "Opening:Entering Ship", 24)
+       go frame "Entering"
+       set the picture of cast NavCast = the picture of cast A62
+       RunPaco (CDpath & "Opening:Entering Ship PPV", 1)
+       go frame "Game"
+   else
+        sound stop 1
+        RunPaco (HDpath & "Misc Files:GameOver", 24)
+        go frame "Entering"
+        RunPaco (CDpath & "Video:Lose " & string( random(3) ), 9)
+        go frame "NPReturn"
+    end if
+
+-------------------------------------------------------------------------------------------------------------------
+macro TraverseDefTree DefMove
+
+---|  Constants  Start  |---
+global MapDBVar, DefDBVar
+---|  Constants  End     |---
+
+global DefFilePos, DefNodeString, DefLevel, DefNode, DefPrevNode, DefMapCord, DefMapPos, PrevDefMapCord, LineOfSight
+     
+     set DefPrevNode = DefNode
+     set PrevDefMapCord = DefMapCord
+
+      set DefMapPos = DefMove + DefMapPos
+      set DefMapCord = line DefMapPos of MapDBVar
+
+      set DefFilePos =  DefMove + DefFilePos
+      set DefNodeString = line DefFilePos of DefDBVar
+
+      set DefNode = item 1 of DefNodeString
+      set DefLevel = integer(chars( DefNode,1,1 ))
+      set LineOfSight = item 7 of DefNodeString
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+macro DefPathToTarget TargetLocation
+
+---|  Constants  Start  |---
+global NodeFile, NodeData, LengthNodestring, DefNodeStringLength
+---|  Constants  End     |---
+
+global TargetLevel, DefLevel, DefNodeString, SearchPos, DefTreePath, DefNodePath, QSDefNodeString
+global Node, QSDefNode, DefFilePos, WarningLOS, DefNode, AppendedTargetNode, LineOfSight
+
+    set WarningLOS = empty
+    set DefTreePath = empty
+    set LineOfSight = empty
+    set DefNodePath = empty
+
+    set QSTargetNode = value(chars(TargetLocation,3,4))
+    set QSTargetLevel = value(chars(TargetLocation,1,1))
+    set QSDefNodeString = DefNodeString
+    set SearchPos = DefFilePos
+
+    if (QSTargetLevel <> DefLevel) then
+
+                 if not(DefNode contains "L") then
+
+                    set CurrNode = value(chars(DefNode,3,4))
+                    if (QSTargetLevel > 2) and (DefLevel <= 2) then set DashToLadder = value(item DefLevel of "17, 20")
+                    else if (QSTargetLevel = 6) and (DefLevel = 5) then set DashToLadder = 4
+                    else if (DefNode contains "L") then set DashToLadder = CurrNode 
+                    else set DashToLadder = value(item 9 of QSDefNodeString)
+                
+                   if (CurrNode <>  DashToLadder) then 
+                        set QSDefNode =  value( chars(QSDefNodeString, 3 ,4) )
+                        QuickSearch ( DashToLadder )
+                    end if
+
+                end if
+
+                set SearchDefLevel = DefLevel
+                repeat while (QSTargetLevel <> SearchDefLevel)                                                                     -- In a ladder
+                        if (QSTargetLevel < SearchDefLevel) then set TreeJump = item 10 of QSDefNodeString
+                         else set TreeJump = item 11 of QSDefNodeString
+                        TraverseQSDefTree (TreeJump)
+                        set SearchDefLevel = integer(chars((item 1 of QSDefNodeString), 1,1))
+                end repeat
+
+    end if
+
+   if item 1 of QSDefNodeString contains "L" then TraverseQSDefTree (item 12 of QSDefNodeString)     -- Outa a ladder
+   set QSDefNode =  integer( chars(QSDefNodeString, 3 ,4) )
+   if (QSTargetLevel = 2) then Dck2ShortCut( QSTargetNode )
+   QuickSearch (QSTargetNode )                                                                                                          -- On same level
+
+    set AppendedNode = item 8 of QSDefNodeString                                                                                 -- Other side of door
+    if (AppendedNode <> "##") then TraverseQSDefTree (integer(AppendedNode) - integer(chars(QSDefNodeString,3,4)))
+
+    delete item 1 of DefTreePath
+    delete item 1 of WarningLOS
+    SetWarningLevel
+-------------------------------------------------------------------------------------------------------------------
+Macro Dck2ShortCut QSTargetNode
+
+global QSDefNodeString, QSDefNode
+    
+    set DeckTwoSection = "/3/4/5/6/7/8/9/10/11/12/13/14/15/16/"
+    set DefInSection = (DeckTwoSection contains  ( "/" & QSDefNode & "/"  ) )
+    set TargetInSection = (DeckTwoSection contains  ( "/" & QSTargetNode & "/"  ) )
+
+    if  DefInSection and not(TargetInSection) then 
+        QuickSearch (13 )
+        TraverseQSDefTree (10 )                                                              -- swing over to 2.23
+        set QSDefNode =  value( chars(QSDefNodeString, 3 ,4) )
+    else if not(DefInSection) and TargetInSection  then 
+        QuickSearch (23 )
+        TraverseQSDefTree ( -10 )                                                            -- swing over to 2.13
+        set QSDefNode =  value( chars(QSDefNodeString, 3 ,4) )
+    end if
+-------------------------------------------------------------------------------------------------------------------
+Macro TraverseQSDefTree TraverseDirection
+global SearchPos, QSDefNodeString, DefNodeStringLength, DefTreePath, DefNodePath, WarningLOS, QSDefNode, DefDBVar
+
+   set SearchPos = integer(TraverseDirection)  + SearchPos
+    set QSDefNodeString = line SearchPos of DefDBVar
+
+    set DefTreePath =  DefTreePath  & ","  & TraverseDirection
+    --set DefNodePath = DefNodePath   & "," & (item 1 of QSDefNodeString)
+    set WarningLOS = WarningLOS & "," & (item 7 of QSDefNodeString)
+    
+-------------------------------------------------------------------------------------------------------------------
+Macro RandomNode
+
+global DefTreePath, TargetLevel, DefLevel, DefRoaming
+
+  set DefRoaming = false
+  set NodeIndex = "23,41,5,7,16,10,"
+ set TargetLevel = random(6)
+  repeat while (TargetLevel = DefLevel)
+     set TargetLevel = random(6)
+  end repeat
+  set TargetLocation = string( TargetLevel ) & "." & string( random(integer(item TargetLevel of NodeIndex)) )
+  DefPathToTarget (  TargetLocation  )
+
+-------------------------------------------------------------------------------------------------------------------
+Macro AdvDefender
+
+---|  Constants  Start  |---
+global NodeFile, NodeData, LengthNodestring, DefNodeStringLength, CBLightSprite, CBLightCast, DefMapSprite, ProbeCastNum
+---|  Constants  End     |---
+
+global WarningLOS, DefenderRun, DefTreePath, DefLevel, Level, DefMapLevel, DefNode, MapMode, DefJammed
+global PrevDefLevel, Node, WarningLevel, UserMove, DefTrapped
+
+    if DefTrapped then set DefTrapped = false
+    set UserMove = 0
+    if DefJammed then
+            set DefJammed = false
+            set the castnum of sprite CBLightSprite = CBLightCast
+            InstallMap ( 2, 2 )
+            SetDefenderRun
+    end if
+
+    if (DefenderRun = 0)  then SetDefenderRun
+        else set DefenderRun = DefenderRun - 1
+
+    if (DefTreePath <> empty)  then
+
+            TraverseDefTree (integer(item 1 of DefTreePath))
+
+            if (PrevDefLevel <> DefLevel) then
+                if (MapMode = 2) or ((MapMode = 1) and (PrevDefLevel = Level)) then AnimateMap( "Defender", "Null")
+                if (MapMode = 2) or ((MapMode = 1) and (DefLevel = Level)) then InstallMap ( 2, 6 )
+                if ((MapMode = 1) and (PrevDefLevel = Level)) then
+                         set the castnum of sprite DefMapSprite = 0
+                         updatestage
+                end if
+            end if
+
+            set PrevDefLevel = DefLevel
+            
+            delete item 1 of WarningLOS
+            delete item 1 of DefTreePath
+            SetWarningLevel
+
+            if (DefNode <> Node) and  not ((MapMode = 1) and (DefLevel <> Level)) then AnimateMap( "Defender", "Null" )
+
+            if (WarningLevel = 0)  then KillUser
+
+    else RandomNode
+-------------------------------------------------------------------------------------------------------------------
+Macro SetWarningLevel
+
+global WarningLOS, LineOfSight, TargetDoorNode, WarningLevel, DefNode, DefLevel, Level, Node, Direction
+global DoorOpen, DefenderOff
+
+
+    if DefenderOff then set WarningLevel = 4
+    else
+
+         if DoorOpen then set DWarnNode = "*" & string(Direction) & "-"  & Node & "*"
+         else set DWarnNode = "Null"
+         set WarnNode = "*" & Node & "*"
+
+       if (LineOfSight contains DWarnNode) or (LineOfSight contains WarnNode) then set WarningLevel = 0
+         else
+            if (WarningLOS = 0) or (WarningLOS = empty) then exit
+            set HighLevel = item 1 of WarningLOS
+            if (HighLevel contains DWarnNode) or (HighLevel contains WarnNode) then set WarningLevel = 1
+            else 
+                    if DefLevel = Level then set LowLevel = item 2 of WarningLOS & item 3 of WarningLOS
+                    else set LowLevel = item 2 of WarningLOS
+                    if (LowLevel contains DWarnNode) or (LowLevel contains WarnNode) then set WarningLevel = 2
+                    else set WarningLevel = 3
+            end if
+
+        end if
+
+    end if
+-----------------------------------------------------------------------------------------------------------------
+Macro SetDefenderRun
+
+global DefenderSpeed, DefenderRun, SkillLevel
+
+    set DefenderSpeed = (6 - SkillLevel ) * 50 +  random(150) + 100
+    set DefenderRun = random(10) + 5
+    set the timeoutlength = integer( DefenderSpeed )

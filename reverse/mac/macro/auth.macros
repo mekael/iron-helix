@@ -1,0 +1,488 @@
+--Auth
+--
+-----------------------------------------------------------------------------------------------------------------
+Macro EnterAuth CapturedH, CapturedV, KeyNumSelected
+    
+---|  Constants  Start  |---
+global  PanelSprite, AuthNumCast, ScreenCntrlSprite
+---|  Constants  End     |---
+
+global AuthCodeVar, PreAuthScreen, CompPacoUp, ReturingToGame
+
+
+        if ((CapturedH > 351) and (CapturedH < 396) and (CapturedV > 69) and (CapturedV < 125)) �
+                                                                                                                                   or (KeyNumSelected <= 11) then
+            if (KeyNumSelected <> "Null") then 
+                set AuthNumSelected = KeyNumSelected
+            else
+                set AuthNumSelected =  (((CapturedV - 69)/14) * 3) + ((CapturedH - 351)/16) + 1
+                if AuthNumSelected = 12  then set AuthNumSelected = 11
+            end if
+            set the castnum of sprite PanelSprite = AuthNumCast  + AuthNumSelected
+            updatestage
+            if AuthNumSelected = 10 then set AuthNumSelected = 0
+
+             if AuthNumSelected >= 11 then set AuthCodeVar = empty
+             else if the number of chars in AuthCodeVar < 7 then set AuthCodeVar = AuthCodeVar & string(AuthNumSelected)
+             else  puppetsound "SysBeeb"
+
+           set the text of cast AuthNumCast = AuthCodeVar
+            updatestage
+            DelayOf(10)
+            set the castnum of sprite PanelSprite = 0
+            updatestage
+
+        else if ((CapturedH > 414) and (CapturedH < 471) and (CapturedV > 90) and (CapturedV < 126)) �
+                                                                                                                                    or (KeyNumSelected <= 14) then
+
+                if (CapturedV > 108) or (KeyNumSelected <= 13) then
+                          set the castnum of sprite PanelSprite = AuthNumCast  + 13                         -- Cancel
+                          updatestage
+                          set RefreshScreen = true
+                else
+                        set the castnum of sprite PanelSprite = AuthNumCast  + 12                               -- Enter
+                        updatestage
+                        DelayOf(20)
+                        set the castnum of sprite PanelSprite = 0
+                        updatestage
+                        set RefreshScreen = CheckAuth ( AuthCodeVar ) 
+                end if
+                if RefreshScreen then
+                   set the castnum of sprite PanelSprite = 0
+                   set the castnum of sprite ScreenCntrlSprite = PreAuthScreen
+                   set the castnum of sprite (ScreenCntrlSprite + 1) = 0
+                   updatestage
+               end if
+
+       end if
+
+-----------------------------------------------------------------------------------------------------------------
+Macro CheckAuth AuthCodeVar
+
+---|  Constants  Start  |---
+global  ScreenCntrlSprite 
+---|  Constants  End     |---
+
+global AuthCodeString, AuthMovieString, AuthWinString, AuthVarsString, CompItemSelect, CodeCast, MenuName
+global DefenderTasks, GameVidClues, VidCluesAvail
+
+    set DBVidClueString = item CompItemSelect of AuthCodeString
+    set RefreshOnReturn = false
+    if VidCluesAvail contains chars( DBVidClueString,1,2) and (AuthCodeVar = chars(DBVidClueString, 4, 7)) then
+            DoCmpAction(item CompItemSelect of AuthWinString, "Funct")
+    else if VidCluesAvail contains chars( DBVidClueString,9,10) and (AuthCodeVar = chars(DBVidClueString, 12, 15)) then
+            DoCmpAction(item CompItemSelect of AuthWinString, "Funct")
+    else if (MenuName = "Weapon") and (CompItemSelect = 3) then                           -- Special case Weapon Authorization
+             set MissionCodes = (the text of cast (CodeCast + 1))
+             if MissionCodes contains AuthCodeVar then
+
+                    if Word 1 of MissionCodes = AuthCodeVar then  DoCmpAction("Target1", "Varible")
+                    else if Word 2 of MissionCodes = AuthCodeVar then  DoCmpAction("Target2", "Varible")
+                    else if Word 3 of MissionCodes = AuthCodeVar then  DoCmpAction("Target3", "Varible")
+                    PacoErase
+
+              else DoCmpAction("AccessDeniedCode","None")
+
+    else if AuthCodeVar = the text of cast CodeCast then 
+            DoCmpAction(item CompItemSelect of AuthMovieString, "Varible")
+             set RefreshOnReturn = true
+    else 
+        DoCmpAction("AccessDeniedCode","None")
+         set RefreshOnReturn = true
+    end if
+    return(  RefreshOnReturn )
+
+------------------------------------------------------------------------------------------------------------------
+--      (Auth)orization
+-----------------------------------------------------------------------------------------------------------------
+Macro Auth 
+
+---|  Constants  Start  |---
+global  ScreenCntrlSprite, PanelSprite, CompStringLength, CntScreenH, CntScreenV, AuthNumCast
+---|  Constants  End     |---
+
+global CmpMenuDBstring,  CmpDBfilePos, AuthCodeVar, PreAuthScreen, AuthCodeString, AuthMovieString, AuthWinString
+    
+    set the castnum of sprite PanelSprite = 0
+    set PreAuthScreen = the castnum of sprite ScreenCntrlSprite
+    set the castnum of sprite ScreenCntrlSprite = the number of cast "Auth"
+    ResetCast(PanelSprite, 0, CntScreenH, CntScreenV)
+    ResetCast(ScreenCntrlSprite + 1, AuthNumCast, 353, 55)
+    set AuthCodeVar = empty
+    set the text of cast AuthNumCast = AuthCodeVar
+    puppetsound "Menu Sound"
+    updatestage
+------------------------------------------------------------------------------------------------------------------
+--      (Movi)eToPlay
+-----------------------------------------------------------------------------------------------------------------
+Macro Movi 
+
+---|  Constants  Start  |---
+global  ScreenCntrlSprite, PanelSprite
+---|  Constants  End     |---
+
+global MenuOptionString, CompItemSelect, MenuTypeString, CompPacoUp
+
+    set the castnum of sprite PanelSprite = 0
+    updatestage
+
+    set WhichPaco = chars((Item CompItemSelect of MenuOptionString), 6,11)
+    if WhichPaco = "CPUETA" then set ActionAssociated = "Funct"
+    else  set ActionAssociated = "None"
+    DoCmpAction(WhichPaco, ActionAssociated)
+
+     if item 3 of MenuTypeString  = "NoErase" then set CompPacoUp = true
+
+------------------------------------------------------------------------------------------------------------------
+--      (Hier)archicalMove
+-----------------------------------------------------------------------------------------------------------------
+Macro Hier 
+
+---|  Constants  Start  |---
+global  ScreenCntrlSprite, PanelSprite, CompStringLength, CmpDBVar
+---|  Constants  End     |---
+
+global CmpMenuDBstring, MenuOptionString, MenuTypeString, CmpDBfilePos, MenuType, AuthCodeString,AuthMovieString
+global AuthWinString, MenuName, AuthVarsString, VidAtThisNode, LocationPos
+
+    puppetsound "Menu Sound"
+    set the castnum of sprite PanelSprite = 0
+    set CmpDBfilePos = integer(chars(CmpMenuDBstring, 6,8)) + 1
+    set LocationPos = CmpDBfilePos + 1
+
+    set MenuTypeString = line CmpDBfilePos of CmpDBVar
+    set MenuOptionString = line (CmpDBfilePos + 1) of CmpDBVar
+
+    set MenuType = item 1 of MenuTypeString
+    set MenuName = item 2 of MenuTypeString
+
+    if MenuType = "Action" then
+            set AuthCodeString = line (CmpDBfilePos + 2) of CmpDBVar
+            set AuthWinString = line (CmpDBfilePos + 3) of CmpDBVar
+            set AuthMovieString = line (CmpDBfilePos + 4) of CmpDBVar
+            set AuthVarsString = line (CmpDBfilePos + 5) of CmpDBVar
+    end if
+
+    if MenuName = "Main" and (VidAtThisNode <> "None") then
+            set the castnum of sprite (ScreenCntrlSprite + 2) = the number of cast "Mssg"
+    else set the castnum of sprite (ScreenCntrlSprite + 2) = 0
+
+    set the castnum of sprite (ScreenCntrlSprite + 1 ) = 0
+    set the castnum of sprite ScreenCntrlSprite  = the number of cast MenuName
+    set CmpDBfilePos = CmpDBfilePos + 1
+    updatestage
+------------------------------------------------------------------------------------------------------------------
+--      (Exit)theComputer
+-----------------------------------------------------------------------------------------------------------------
+Macro XCmp 
+
+---|  Constants  Start  |---
+global FnctBtnSprite, FunctBtnCast
+---|  Constants  End     |---
+
+global NotesUp
+
+    set the castnum of sprite FnctBtnSprite = FunctBtnCast
+    if NotesUp then PutAwayNotes
+    DeInstallArm
+
+------------------------------------------------------------------------------------------------------------------
+--   (Trav)erseScreens
+------------------------------------------------------------------------------------------------------------------
+Macro Trav
+ 
+---|  Constants  Start  |---
+global  ScreenCntrlSprite, PanelSprite, CompStringLength, CodeCast, CmpDBVar
+---|  Constants  End     |---
+
+global MissScnNum, CompItemSelect, MenuOptionString, CmpDBfilePos
+
+    set the castnum of sprite PanelSprite = 0
+    if CompItemSelect = 7 then 
+        set NextCast =  - 1                     -- Bck
+        set CmpDBfilePos = CmpDBfilePos - 1
+    else 
+        set NextCast = + 1                      -- Fwd
+         set CmpDBfilePos = CmpDBfilePos + 1
+    end if
+
+    set MenuOptionString  = line CmpDBfilePos of CmpDBVar
+    set the castnum of sprite ScreenCntrlSprite = the castnum of sprite ScreenCntrlSprite + NextCast
+    set CastName = the name of cast (the castnum of sprite ScreenCntrlSprite)
+
+    if CastName = "Mission 1" then ResetCast((ScreenCntrlSprite + 1 ), CodeCast, 351, 108)
+    else if CastName = "Mission 2" then ResetCast((ScreenCntrlSprite + 1 ), CodeCast + 1, 343,74)
+    else if (CastName = "Mission 3") or (CastName = "Mission")  then set the castnum of sprite (ScreenCntrlSprite + 1 ) = 0
+    puppetsound "Menu Sound"
+    updatestage
+------------------------------------------------------------------------------------------------------------------
+Macro PlaceETA
+
+---|  Constants  Start  |---
+global PanelSprite
+---|  Constants  End     |---
+
+global GameLength,CurrTimeMins , GameStartMins, GameEndMins
+
+    set PerctOfGame = (CurrTimeMins - GameStartMins + 0.0)/GameLength
+    set HorzDist = 466 - 382
+    set VertDist = 135 - 77
+    set Horz = integer(PerctOfGame * HorzDist) + 382
+    set Vert = 135 - integer(PerctOfGame * VertDist)
+
+    ResetCast( Panelsprite, the number of cast "Jeremiah", Horz, Vert )
+    updatestage
+
+------------------------------------------------------------------------------------------------------------------
+Macro SetGameEndTime
+
+global GameStartMins, GameEndMins, GameLength, PercInMiss
+
+    set GameLength = 90
+    set PercInMiss = GameLength - 30
+    set GameStartMins = ConvertedTime()
+    set GameEndMins =  GameStartMins + GameLength
+------------------------------------------------------------------------------------------------------------------
+Macro UpDateGameTime
+
+global CurrTimeMins, GameEndMins, PercInMiss, HDpath, CDpath
+
+    set CurrTimeMins = ConvertedTime()
+    
+    if (GameEndMins - CurrTimeMins) <  PercInMiss then
+            if PercInMiss >= 30 then
+                  PlaySound( PercInMiss & " Min" )
+                  set PercInMiss = integer(PercInMiss/2)
+            else if (PercInMiss <>  0) and ((GameEndMins - CurrTimeMins) <= 1) then
+                 PlaySound( "1 Min" )
+                 set PercInMiss = 0
+            end if
+            repeat while the soundbusy of 1
+            end repeat
+    end if
+
+    if (CurrTimeMins > GameEndMins) then
+        sound stop 1
+        go frame "Segue"
+        RunPaco (HDpath & "Misc Files:GameOver", 24)
+        go frame "Entering"
+        RunPaco (CDpath & "Video:Lose " & string( random(3) ), 9)
+        go frame "NPReturn"
+    end if
+
+------------------------------------------------------------------------------------------------------------------
+Macro DoCmpAction  WhichPaco, ActionAssociated
+   
+---|  Constants  Start  |---
+global  CmpPacoPath, CDPath, PanelSprite, ScreenCntrlSprite, PreAuthScreen
+---|  Constants  End     |---
+
+global CompPacoUp, TaskReSetTime, CompItemSelect, AuthVarsString, DefenderTasks, GamePhase, DefenderOff, DefTrapped
+
+    ResetCast(ScreenCntrlSprite + 1, 0, -1000, -1000)
+    if whichPaco contains "$" then
+
+          set Task = item (CompItemSelect) of AuthVarsString
+          set whichPaco = CDPath & "Computer:" & chars(WhichPaco,1,length(WhichPaco) -1)
+          XPlayAnim whichPaco, (the stageLeft + 335), (the stageTop + 15)
+          if (GamePhase = 4) and ((DefenderOff) or DefTrapped) then 
+                    UserWins( chars(Task,1,length(Task) -1) )
+          else 
+                   DoCmpAction( "Win.Reject", "None" )
+                   set the castnum of sprite PanelSprite = 0
+                   set the castnum of sprite ScreenCntrlSprite = PreAuthScreen
+                   set the castnum of sprite (ScreenCntrlSprite + 1) = 0
+                    DefenderAtWork
+          end if 
+
+    else
+
+        set whichPaco = CDPath & "Computer:" & whichPaco
+        XPlayAnim whichPaco, (the stageLeft + 335), (the stageTop + 15)
+        if ActionAssociated <> "None" then
+           if ActionAssociated = "Funct" then set TriggerAction = 4
+           else set TriggerAction = 0
+           set Task = item (CompItemSelect + TriggerAction) of AuthVarsString
+           if Task <> "#"  then
+
+                if Task Contains "!" then do( chars(Task,1,length(Task) -1) )             -- Actions which trigger fuctions
+                else if (DefenderTasks = "none") then 
+                          set DefenderTasks = Task
+                          set TaskReSetTime = CreateResetTime (1)
+                else if not (DefenderTasks contains Task ) then set DefenderTasks = DefenderTasks & " " & Task
+
+            end if
+        end if
+
+    end if
+
+------------------------------------------------------------------------------------------------------------------
+Macro FakeUserWins
+
+     DoCmpAction  ("Win.Reject", "None")
+     PacoErase
+-----------------------------------------------------------------------------------------------------------------
+Macro CreateResetTime HowLong
+
+    set CurTime = the time
+    set Period = word 2 of CurTime
+    set TheTime = word 1 of  CurTime
+    set LengthOfTimeString = length(TheTime)
+    set Hour = chars(TheTime, 1,( LengthOfTimeString -2) )
+    set NewMins = integer(chars(TheTime, (LengthOfTimeString - 1), LengthOfTimeString) ) + HowLong
+    if NewMins < 9 then set NewMins = "0" & string(NewMins)
+    else set NewMins = string(NewMins)
+    set ReSetTime = Hour & NewMins & " " & Period
+
+    return( ReSetTime )
+-----------------------------------------------------------------------------------------------------------------
+Macro DeleteVidClue VidClueExecuting
+
+global VidCluesAvail
+
+    set counter = 1
+    set done = false
+    repeat while not done
+        if chars(item counter of  VidCluesAvail,1, 2) = VidClueExecuting then
+            delete item counter of VidCluesAvail
+            set done = true
+      end if
+     set counter = counter + 1
+     end repeat
+
+------------------------------------------------------------------------------------------------------------------
+Macro DoorSensorsOff
+
+global DoorSensors, DefenderReSetTime, DefenderTasks
+
+    if DoorSensors = "Active" then 
+
+            set DoorSensors = "NonActive"
+            if DefenderTasks contains "none" then set DefenderTasks =  "DoorSensors"
+            else set DefenderTasks = DefenderTasks & " " & "DoorSensors"
+            set DefenderReSetTime = CreateResetTime (5)
+
+   else DoCmpAction( "DoorSensorsBOL.Cmp", "None" )
+------------------------------------------------------------------------------------------------------------------
+Macro UserWins
+
+---|  Constants  Start  |---
+global   ScreenCntrlSprite, ScreenCast, PanelSprite,CntScreenH,CntScreenV, CDpath, HDpath,PacoSprite
+---|  Constants  End     |---
+
+global AlreadyClipped
+
+    when timeout then
+    set AlreadyClipped = false
+    ScreenToCast ( ScreenCntrlSprite, ScreenCast )
+    set the castnum of sprite ScreenCntrlSprite = ScreenCast
+    set the castnum of  sprite (ScreenCntrlSprite + 1) = 0
+    ResetCast(PanelSprite,the number of cast "Segue",CntScreenH,CntScreenV)
+    updatestage
+
+    set WhichSegue = HDpath & "Misc Files:EndofShip"
+    XPlayAnim WhichSegue, (the stageLeft + 38) , (the stageTop + 40)
+
+    go "WinFrame"
+    set whichPaco = CDPath & "Video:Win " & string( random(2) )
+    XPlayAnim whichPaco, (the stageLeft + 335), (the stageTop + 15)
+    go "Bootup"
+------------------------------------------------------------------------------------------------------------------
+
+Macro DefShutDown HowTriggered
+
+global DefNode, DefenderReSetTime, BulkHeads, TurnDefOff, DefenderOff, DefenderTasks, CompItemSelect, AuthMovieString
+global GamePhase, ScreenCast, ExecutedASegue, CBLightSprite, WarningLevel, DeftreePath, WarningLos, DefNodePath
+global AlreadyClipped,  ScreenCntrlSprite, CDpath, PanelSprite, DefJammed, DefMapSprite, LineOfSight, DefTrapped
+  
+   if DefenderOff then DoCmpAction( "DefAlreadyOFF.cmp", "None" )
+   else
+
+       if  (HowTriggered = "BulkHeads") and �
+                         ((DefNode = "2.05") or (DefNode = "2.06") or (DefNode = "2.07")) then
+                 DefOffLine HowTriggered
+                 set DefTrapped = true
+                 set the timeoutlength = 3600 * 5
+                 set DefJammed = false
+      else if (HowTriggered = "TurnDefOff") then
+                 set DefenderOff = true
+                set the castnum of sprite DefMapSprite = 0
+                set LineOfSight = empty
+                 DefOffLine HowTriggered
+       else 
+              DoCmpAction( "WrongLoc." & HowTriggered ,"None" )
+              PacoErase
+       end if
+
+    end if
+------------------------------------------------------------------------------------------------------------------
+Macro DefOffLine HowTriggered
+
+---|  Constants  Start  |---
+global   ScreenCntrlSprite, ScreenCast, PanelSprite,CntScreenH,CntScreenV, CDpath, CBLightSprite, HDpath
+---|  Constants  End     |---
+
+global AlreadyClipped, DefenderTasks, DefenderReSetTime, GamePhase, DeftreePath, WarningLos, DefNodePath, WarningLevel
+global DefJammed, NotesUp
+
+
+   when timeout then
+   set the castnum of sprite CBLightSprite = 0
+    
+   set DefTreePath = empty
+    set WarningLos = empty
+    set DefNodePath = empty
+    set DefJammed = false
+   set WarningLevel = 4
+
+    if NotesUp then PutAwayNotes
+    set AlreadyClipped = false
+    set PrevCast = the castnum of sprite ScreenCntrlSprite
+    ScreenToCast ( ScreenCntrlSprite, ScreenCast )
+    set the castnum of sprite ScreenCntrlSprite = ScreenCast
+    ResetCast(ScreenCntrlSprite + 1, the castnum of sprite (ScreenCntrlSprite + 1) , -1000, -1000)
+
+    if DefenderTasks contains "none" then set DefenderTasks =  HowTriggered
+    else set DefenderTasks = DefenderTasks & " " & HowTriggered
+
+    set DefenderReSetTime = CreateResetTime (5)
+    ResetCast(PanelSprite,the number of cast "Segue",CntScreenH,CntScreenV)
+    updatestage
+
+    if HowTriggered = "Incin" then set WhichSegue = HDpath & "Misc Files:" & HowTriggered
+    else set WhichSegue = CDpath & "Segues:" & HowTriggered
+
+    XPlayAnim WhichSegue, (the stageLeft + 38) , (the stageTop + 40)
+    set the castnum of sprite PanelSprite = 0
+
+    if (GamePhase = 3) then AdvLevel ( 4 )
+    else if (GamePhase = 2) or (GamePhase = 4) then 
+            set GamePhase = 4
+            DeInstallComputer
+    end if
+------------------------------------------------------------------------------------------------------------------
+
+Macro KillDefender  HowTriggered
+   
+---|  Constants  Start  |---
+global CDpath, DefMapSprite, CBLightSprite, PanelSprite, CntScreenH, CntScreenV, ScreenCntrlSprite, ScreenCast
+---|  Constants  End     |---
+
+global DefNode, DefenderOff, DefenderReSetTime, LineOfSight, DeftreePath, WarningLos, DefNodePath, GamePhase
+global DefenderTasks, WarningLevel, AlreadyClipped
+
+
+    if  (HowTriggered = "Incin") and ((DefNode = "6.06") or (DefNode = "6.05")) then set Action = True
+    else if  (HowTriggered = "Eject") and ((DefNode = "6.08") or (DefNode = "6.09")) then set Action = True
+    else set Action = False
+ 
+    if Action and not DefenderOff then
+        if (HowTriggered = "Eject") then DoCmpAction( "RightLoc.Eject","None" )
+        set DefenderOff = true
+        set the castnum of sprite DefMapSprite = 0
+        set LineOfSight = empty
+        DefOffLine HowTriggered
+    else 
+            DoCmpAction( "WrongLoc." & HowTriggered ,"None" )
+            PacoErase
+    end if

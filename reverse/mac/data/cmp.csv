@@ -1,0 +1,101 @@
+Menu,Main,Return,
+Hier(008).02,Hier(040).02,Hier(075).02,Hier(082).02,#,XCmp,#,#,
+#,
+#,
+1.05.1/2.32.3/5.11.0/5.07.2/,
+#,
+--> Line 7 <---
+Menu,Command,Return,
+Hier(015).07,Hier(021).06,Hier(028).01,Hier(033).01,Hier(001).01,XCmp,#,#,
+1.05.1/1.09.0/1.14.0/2.32.3/2.15.3/3.04.1/5.07.2/5.11.0/
+5.11.0/
+#,
+1.05.1/2.32.3/5.11.0/5.07.2/2.04.1/2.08.3/2.04.0/2.04.2/,
+--> Line 14 <---
+TravMenu,Mission,Return,
+#,#,#,#,Hier(008).01,XCmp,#,Trav,
+#,#,#,#,Hier(008).01,XCmp,Trav,Trav,
+#,#,#,#,Hier(008).01,XCmp,Trav,Trav,
+#,#,#,#,Hier(008).01,XCmp,Trav,#,
+--> Line 20 <---
+Action,Weapon,Return,
+#,Auth.01,Auth.01,Auth.01,Hier(008).01,XCmp,,#,#,
+#,17-7777/18-3654,19-6543/20-2382,21-8282/22-1357,
+#,Abort.Win$,WeapDesig.Win$,WeapDesig.Win$,
+#,Abort,[SpecialCased],OutOfRange,
+#,Abort,Target,#,#,#,#,#,
+--> Line 27 <-----
+TravMenu,Crew,NoErase,
+Movi(Crew01),Movi(Crew02),Movi(Crew03),Movi(Crew04),Hier(008).01,XCmp,#,Trav,
+Movi(Crew05),Movi(Crew06),Movi(Crew07),Movi(Crew08),Hier(008).01,XCmp,Trav,Trav,
+Movi(Crew09),Movi(Crew10),Movi(Crew11),Movi(Crew12),Hier(008).01,XCmp,Trav,#,
+--> Line 32 <---
+Action,Security,Return,
+#,Auth.01,Auth.01,Auth.01,Hier(008).01,XCmp,,#,#,
+#,23-9999/24-6078,##-####/##-####,25-8675/26-4021,
+#,Secure,#,Internal,
+#,SecureReject,DoorSensors,ELO,
+#,#,DoorSensorsOff!,#,#,DefShutDown("BulkHeads")!,#,DefShutDown("TurnDefOff")!,
+--> Line 39 <---
+Menu,Engine,Return,
+Hier(047).08,Hier(054).08,Hier(061).08,Hier(068).08,Hier(001).01,XCmp,#,#,
+2.32.3/5.07.2/
+2.32.3/5.07.2/
+2.32.3/5.07.2/
+2.32.3/5.07.2/
+--> Line 46 <-------
+Action,AntiMat,Return,
+#,Movi(AntiMt),Auth.01,Auth.01,Hier(040).01,XCmp,#,#,
+#,#,01-6742/02-2346,03-3276/04-8294,
+#,#,Critsystfail.Win$,Critsystfail.Win$,
+#,#,Antishutdown,Critsyst,#,#,#,#,
+#,#,#,#,#,
+--> Line 53 <----
+Action,Reactor,Return,
+#,Movi(Reacto),Auth.01,Auth.01,Hier(040).01,XCmp,#,#,
+#,#,05-1111/06-6364,07-0718/08-0135,
+#,React,Critsystfail.Win$,Critsystfail.Win$,
+#,#,Critsyst,Critsyst,#,#,#,#,
+#,#,#,#,#,
+--> Line 60 <----
+Action,Field,Return,
+#,Movi(FieldM),Auth.01,Auth.01,Hier(040).01,XCmp,#,#,
+#,#,09-2345/10-2468,11-9876/12-1911,
+#,Field,Critsystfail.Win$,Critsystfail.Win$,
+#,#,AntiShutdown,Critsyst,
+#,#,#,#,#,#,#,#,
+--> Line 67 <---
+Action,Warp,Return,
+#,Movi(WarpMv),Auth.01,Auth.01,Hier(040).01,XCmp,#,#,
+#,#,13-4455/14-6273,15-0918/16-0000,
+#,Warp,Critsystfail.Win$,Critsystfail.Win$,
+#,#,Antishutdown,Critsyst,
+#,#,#,#,#,#,#,#,#,
+--> Line 74 <-----
+Action,Navigation,NoErase,
+#,Auth.01,Auth.01,Movi(CPUETA),Hier(001).01,XCmp,#,#,
+#,31-6921/32-4983,33-5555/34-5432,#,
+#,NavHelm.Win$,NavHelm.Win$,#,
+#,ElO,ELO,#,
+#,#,#,#,#,#,#,PlaceETA!,
+--> Line 81 <-------
+Menu,Local,Return,
+Hier(096).02,Hier(089).02,#,#,Hier(001).01,XCmp,#,#,
+6.10.2/
+5.07.2/6.04.2/6.10.2/
+#,
+#,
+--> Line 88 <------
+Action,Incin,Return,
+#,Auth.01,Movi(Steril),Movi(Recycl),Hier(082).01,XCmp,#,#,
+#,29-1313/30-5218,#,#,
+#,Incin,#,#,
+#,IncinOut,#,#,
+#,#,#,#,#,KillDefender("Incin")!,#,#,#,
+--> Line 95 <--------
+Action,Load,Return,
+#,Auth.01,Movi(LiftMv),Movi(Invent),Hier(082).01,XCmp,#,#,
+#,27-2112/28-0142,#,#,
+#,Eject,#,#,
+#,ELO,#,#,
+#,#,#,#,#,KillDefender("Eject")!,#,#,#,
